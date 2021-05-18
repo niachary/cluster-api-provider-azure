@@ -38,6 +38,7 @@ type VMScope interface {
 	SetAnnotation(string, string)
 	SetProviderID(string)
 	GetProviderID() string
+	ProviderID() string
 	SetAddresses([]corev1.NodeAddress)
 	SetVMState(infrav1.VMState)
 }
