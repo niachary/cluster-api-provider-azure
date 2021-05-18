@@ -63,7 +63,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		log.Info(fmt.Sprintf("Reconciling VM: %s",vmSpec.Name))
 
 		//check if the provider ID is set on the VM otherwise set it
-		providerID := fmt.Sprintf("ase:///subscriptions/3046a7ea-80e0-4340-4599-1a4224311331/resourceGroups/managementrg3/providers/Microsoft.Compute/virtualMachines/%s",vmSpec.Name)
+		providerID := fmt.Sprintf("ase:///subscriptions/3046a7ea-80e0-4340-4599-1a4224311331/resourceGroups/targetclustergroup/providers/Microsoft.Compute/virtualMachines/%s",vmSpec.Name)
 
 		if(s.Scope.ProviderID() == ""){
 			log.Info("Calling set provider ID")
@@ -189,6 +189,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			if err := s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), vmSpec.Name, virtualMachine); err != nil {
 				return errors.Wrapf(err, "failed to create VM %s in resource group %s", vmSpec.Name, s.Scope.ResourceGroup())
 			}
+
+			log.Info(fmt.Sprintf("Successfully created VM %s",vmSpec.Name))
 
 			s.Scope.V(2).Info("successfully created VM", "vm", vmSpec.Name)
 		}

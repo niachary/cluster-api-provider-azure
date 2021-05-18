@@ -42,6 +42,7 @@ import (
 	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 	"github.com/niachary/cluster-api-provider-azure/cloud/scope"
 	"github.com/niachary/cluster-api-provider-azure/util/reconciler"
+	"k8s.io/klog/klogr"
 )
 
 // AzureMachineReconciler reconciles a AzureMachine object
@@ -258,6 +259,9 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	ams := newAzureMachineService(machineScope, clusterScope)
 
 	err := ams.Reconcile(ctx)
+	log := klogr.New()
+	log.Info("After reconciling Virtual Machine")
+	
 	if err != nil {
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error creating new AzureMachine", errors.Wrapf(err, "failed to reconcile AzureMachine").Error())
 		conditions.MarkFalse(machineScope.AzureMachine, infrav1.VMRunningCondition, infrav1.VMProvisionFailedReason, clusterv1.ConditionSeverityError, err.Error())
