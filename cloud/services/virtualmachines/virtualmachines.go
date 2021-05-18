@@ -61,12 +61,19 @@ func (s *Service) Reconcile(ctx context.Context) error {
 	for _, vmSpec := range s.Scope.VMSpecs() {
 		existingVM, err := s.getExisting(ctx, vmSpec.Name)
 		log.Info(fmt.Sprintf("Reconciling VM: %s",vmSpec.Name))
+
+		//check if the provider ID is set on the VM otherwise set it
+		if(s.Scope.GetProviderID() == ""){
+			log.Info("Calling set provider ID")
+			s.Scope.SetProviderID(fmt.Sprintf("ase://%s", existingVM.ID))
+		}
+
 		switch {
 		case err != nil && !azure.ResourceNotFound(err):
 			return errors.Wrapf(err, "failed to get VM %s", vmSpec.Name)
 		case err == nil:
 			// VM already exists, update the spec and skip creation.
-			s.Scope.SetProviderID(fmt.Sprintf("ase://%s", existingVM.ID))
+			//s.Scope.SetProviderID(fmt.Sprintf("ase://%s", existingVM.ID))
 			s.Scope.SetAnnotation("cluster-api-provider-azure", "true")
 			s.Scope.SetAddresses(existingVM.Addresses)
 			s.Scope.SetVMState(existingVM.State)

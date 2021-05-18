@@ -288,8 +288,17 @@ func (m *MachineScope) ProviderID() string {
 	return parsed.ID()
 }
 
+// GetProviderID sets the AzureMachine providerID in spec.
+func (m *MachineScope) GetProviderID() string {
+	log := klogr.New()
+	log.Info(fmt.Sprintf("get provider ID returns %s",*m.AzureMachine.Spec.ProviderID))
+	return *m.AzureMachine.Spec.ProviderID
+}
+
 // SetProviderID sets the AzureMachine providerID in spec.
 func (m *MachineScope) SetProviderID(v string) {
+	log := klogr.New()
+	log.Info(fmt.Sprintf("Setting provider ID as %s",v))
 	m.AzureMachine.Spec.ProviderID = to.StringPtr(v)
 }
 

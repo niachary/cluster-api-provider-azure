@@ -37,6 +37,7 @@ type VMScope interface {
 	GetVMImage() (*infrav1.Image, error)
 	SetAnnotation(string, string)
 	SetProviderID(string)
+	GetProviderID() string
 	SetAddresses([]corev1.NodeAddress)
 	SetVMState(infrav1.VMState)
 }
