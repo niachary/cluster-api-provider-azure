@@ -123,13 +123,13 @@ func InitFlags(fs *pflag.FlagSet) {
 
 	fs.IntVar(&azureClusterConcurrency,
 		"azurecluster-concurrency",
-		10,
+		1,
 		"Number of AzureClusters to process simultaneously",
 	)
 
 	fs.IntVar(&azureMachineConcurrency,
 		"azuremachine-concurrency",
-		10,
+		1,
 		"Number of AzureMachines to process simultaneously",
 	)
 
