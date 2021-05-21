@@ -22,7 +22,7 @@ import (
 	//"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
 	"github.com/Azure/azure-sdk-for-go/profiles/2018-03-01/compute/mgmt/compute"
 	"github.com/Azure/go-autorest/autorest"
-	"klog"
+	"k8s.io/klog/klogr"
 	azure "github.com/niachary/cluster-api-provider-azure/cloud"
 )
 
@@ -68,10 +68,10 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vm
 		return err
 	}
 	log.Info("after create or update, before waiting")
-	err = future.WaitForCompletionRef(ctx, ac.virtualmachines.Client)
+	/*err = future.WaitForCompletionRef(ctx, ac.virtualmachines.Client)
 	if err != nil {
 		return err
-	}
+	}*/
 	log.Info("after waiting for completion")
 	_, err = future.Result(ac.virtualmachines)
 	log.Info("after waiting for completion, returning the error")
