@@ -21,7 +21,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strings"
-	"runtime/debug"
 
 	"github.com/Azure/azure-sdk-for-go/profiles/2018-03-01/compute/mgmt/compute"
 	//"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2020-06-01/compute"
@@ -199,8 +198,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 			if err := s.Client.CreateOrUpdate(ctx, s.Scope.ResourceGroup(), vmSpec.Name, virtualMachine); err != nil {
 				return errors.Wrapf(err, "failed to create VM %s in resource group %s", vmSpec.Name, s.Scope.ResourceGroup())
 			}
-			
-			debug.PrintStack()
 
 			log.Info(fmt.Sprintf("Successfully created VM %s",vmSpec.Name))
 

@@ -174,9 +174,12 @@ func main() {
 		setupLog.Info("Watching cluster-api objects only in namespace for reconciliation", "namespace", watchNamespace)
 	}
 
-	profilerAddress := "6060"
+	log := klogr.New()
+
+	profilerAddress := ":6060"
 	setupLog.Info("Profiler listening for requests", "profiler-address", profilerAddress)
 	go func() {
+			log.Info("Setting pprof")
 			setupLog.Error(http.ListenAndServe(profilerAddress, nil), "listen and serve error")
 	}()
 
