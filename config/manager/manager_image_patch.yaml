@@ -8,5 +8,5 @@ spec:
     spec:
       containers:
       # Change the value of image field below to your controller image URL
-      - image: niachary/cluster-api-azure-controller-amd64:dev
+      - image: mocimages.azurecr.io/cluster-api-azure-controller-amd64:providerIDfix
         name: manager
