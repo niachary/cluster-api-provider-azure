@@ -68,10 +68,10 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vm
 		return err
 	}
 	log.Info("after create or update, before waiting")
-	/*err = future.WaitForCompletionRef(ctx, ac.virtualmachines.Client)
+	err = future.WaitForCompletionRef(ctx, ac.virtualmachines.Client)
 	if err != nil {
 		return err
-	}*/
+	}
 	log.Info("after waiting for completion")
 	_, err = future.Result(ac.virtualmachines)
 	log.Info("after waiting for completion, returning the error")
@@ -80,14 +80,19 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName, vm
 
 // Delete the operation to delete a virtual machine.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, vmName string) error {
+	log := klogr.New()
+	log.Info("before deleting the VM")
 	future, err := ac.virtualmachines.Delete(ctx, resourceGroupName, vmName)
 	if err != nil {
 		return err
 	}
+	log.Info("after delete VM, before waiting")
 	err = future.WaitForCompletionRef(ctx, ac.virtualmachines.Client)
 	if err != nil {
 		return err
 	}
+	log.Info("after waiting for completion")
 	_, err = future.Result(ac.virtualmachines)
+	log.Info("after waiting for completion, returning the error")
 	return err
 }

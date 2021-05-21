@@ -22,6 +22,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2019-03-01/resources/mgmt/resources"
 	"github.com/Azure/go-autorest/autorest"
 	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"k8s.io/klog/klogr"
 )
 
 // Client wraps go-sdk
@@ -64,14 +65,18 @@ func (ac *AzureClient) CreateOrUpdate(ctx context.Context, name string, group re
 
 // Delete deletes a resource group. When you delete a resource group, all of its resources are also deleted.
 func (ac *AzureClient) Delete(ctx context.Context, name string) error {
+	log := klogr.New()
+	log.Info("before deleting the group")
 	future, err := ac.groups.Delete(ctx, name)
 	if err != nil {
 		return err
 	}
+	log.Info("before wait for completion")
 	err = future.WaitForCompletionRef(ctx, ac.groups.Client)
 	if err != nil {
 		return err
 	}
+	log.Info("after wait for completion, returning the result")
 	_, err = future.Result(ac.groups)
 	return err
 }

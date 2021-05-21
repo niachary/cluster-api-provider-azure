@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/profiles/2018-03-01/network/mgmt/network"
 	"github.com/Azure/go-autorest/autorest"
 	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"k8s.io/klog/klogr"
 )
 
 // Client wraps go-sdk
@@ -60,28 +61,36 @@ func (ac *AzureClient) Get(ctx context.Context, resourceGroupName, nicName strin
 
 // CreateOrUpdate creates or updates a network interface.
 func (ac *AzureClient) CreateOrUpdate(ctx context.Context, resourceGroupName string, nicName string, nic network.Interface) error {
+	log := klogr.New()
+	log.Info("before cerating the network interface")
 	future, err := ac.interfaces.CreateOrUpdate(ctx, resourceGroupName, nicName, nic)
 	if err != nil {
 		return err
 	}
+	log.Info("before wait for completion")
 	err = future.WaitForCompletionRef(ctx, ac.interfaces.Client)
 	if err != nil {
 		return err
 	}
+	log.Info("after wait for completion, returning the result")
 	_, err = future.Result(ac.interfaces)
 	return err
 }
 
 // Delete deletes the specified network interface.
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, nicName string) error {
+	log := klogr.New()
+	log.Info("before deleting the nic")
 	future, err := ac.interfaces.Delete(ctx, resourceGroupName, nicName)
 	if err != nil {
 		return err
 	}
+	log.Info("before wait for completion")
 	err = future.WaitForCompletionRef(ctx, ac.interfaces.Client)
 	if err != nil {
 		return err
 	}
+	log.Info("after wait for completion, returning the result")
 	_, err = future.Result(ac.interfaces)
 	return err
 }

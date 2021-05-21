@@ -23,6 +23,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/services/compute/mgmt/2017-12-01/compute"
 	"github.com/Azure/go-autorest/autorest"
 	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	"k8s.io/klog/klogr"
 )
 
 // Client wraps go-sdk
@@ -53,14 +54,18 @@ func newDisksClient(subscriptionID string, baseURI string, authorizer autorest.A
 
 // Delete removes the disk client
 func (ac *AzureClient) Delete(ctx context.Context, resourceGroupName, name string) error {
+	log := klogr.New()
+	log.Info("before deleting the disk")
 	future, err := ac.disks.Delete(ctx, resourceGroupName, name)
 	if err != nil {
 		return err
 	}
+	log.Info("before wait for completion")
 	err = future.WaitForCompletionRef(ctx, ac.disks.Client)
 	if err != nil {
 		return err
 	}
+	log.Info("after wait for completion, returning the result")
 	_, err = future.Result(ac.disks)
 	return err
 }
