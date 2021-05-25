@@ -34,4 +34,4 @@ require (
 	sigs.k8s.io/controller-runtime v0.5.10
 )
 
-replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v14.2.0+incompatible
+//replace github.com/Azure/go-autorest => github.com/Azure/go-autorest v14.2.0+incompatible

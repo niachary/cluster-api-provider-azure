@@ -28,6 +28,13 @@ spec:
           image: controller:latest
           imagePullPolicy: Always
           name: manager
+          env:
+            - name: AZURE_SDK_TRACING_ENABLED
+              value: "True"
+            - name: AZURE_GO_SDK_LOG_LEVEL
+              value: debug
+            - name: AZURE_GO_SDK_LOG_FILE
+              value: /etc/log.txt
           volumeMounts:
             - mountPath: /etc/ssl/certs/
               name: ca-bundle
