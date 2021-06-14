@@ -146,6 +146,56 @@ func (m *MachineScope) InboundNatSpecs() []azure.InboundNatSpec {
 func (m *MachineScope) NICSpecs() []azure.NICSpec {
 	log := klogr.New()
 	specs := []azure.NICSpec{}
+
+	//if the machine does not have an IP
+	/*1) for control plane, make sure that you take the IP for API Server from the Pool
+	  2) for node IPs, take any IP from the pool
+	  3) create the nic spec
+	  4) create the nic
+	  5) add the IP to used IP pool list
+	*/
+	//
+	if m.IsControlPlane(){
+		apiServerIP := m.ClusterDescriber.APIServerIP()
+		log.Info(apiServerIP)
+		//m.GetFreeIP(apiServerIP)
+		// get this IP from the IP pool	
+	}else{
+		// get any ip from the IP pool
+	}
+	
+
+
+	//get one free ip from the free IP pool
+	//ip = getFreeIP()
+
+	/*log.Info(fmt.Sprintf("Creating nic spec for machine: %s",m.Name()))
+	spec := azure.NICSpec{
+			Name: 				   ,
+			MachineName:		   m.Name(),
+			VNetName:              networkInterface.VnetName,	
+			VNetResourceGroup:     networkInterface.VnetResourceGroup,
+			SubnetName:            networkInterface.SubnetName,
+			VMSize:                m.AzureMachine.Spec.VMSize,
+			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
+			StaticIPAddress: 	   networkInterface.StaticIPAddress,
+	}
+	specs = append(specs, spec)
+	
+	if m.AzureMachine.Spec.AllocatePublicIP == true {
+		specs = append(specs, azure.NICSpec{
+			Name:                  azure.GeneratePublicNICName(m.Name()),
+			MachineName:           m.Name(),
+			VNetName:              m.Vnet().Name,
+			VNetResourceGroup:     m.Vnet().ResourceGroup,
+			SubnetName:            m.Subnet().Name,
+			PublicIPName:          azure.GenerateNodePublicIPName(m.Name()),
+			VMSize:                m.AzureMachine.Spec.VMSize,
+			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
+		})
+	}
+	return specs*/
+
 	for _, networkInterface := range m.AzureMachine.Spec.NetworkInterfaces {
 		log.Info(fmt.Sprintf("Creating spec for Network Interface: %s",networkInterface.Name))
 		spec := azure.NICSpec{
@@ -425,3 +475,18 @@ func (m *MachineScope) GetVMImage() (*infrav1.Image, error) {
 	imageID := m.AzureMachine.Spec.ImageID
 	return azure.GetDefaultUbuntuImage(imageID)
 }
+
+// GetBootstrapData returns the bootstrap data from the secret in the Machine's bootstrap.dataSecretName.
+/*func (m *MachineScope) GetFreeIP(Ip string) (string, error) {
+	azureIPPoolName := client.ObjectKey{
+		Namespace: "default",
+		Name:      "ase-ip-pool",
+	}
+	ippool := &infrav1.IPPool{}
+	if err := m.client.Get(context.Context, azureIPPoolName, ippool); err != nil {
+	
+	return reconcile.Result{}, nil	
+	}
+}*/
+
+

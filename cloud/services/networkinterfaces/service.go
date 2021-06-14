@@ -27,6 +27,7 @@ type NICScope interface {
 	azure.ClusterDescriber
 	logr.Logger
 	NICSpecs() []azure.NICSpec
+	Name() string
 }
 
 // Service provides operations on azure resources

@@ -294,6 +294,11 @@ func (s *ClusterScope) AdditionalTags() infrav1.Tags {
 	return tags
 }
 
+// APIServerIP returns the APIServerIP of the cluster
+func (s *ClusterScope) APIServerIP() string {
+	return s.AzureCluster.Spec.ControlPlaneEndpointIP
+}
+
 // APIServerPort returns the APIServerPort to use when creating the load balancer.
 func (s *ClusterScope) APIServerPort() int32 {
 	if s.Cluster.Spec.ClusterNetwork != nil && s.Cluster.Spec.ClusterNetwork.APIServerPort != nil {

@@ -31,6 +31,19 @@ import (
 // Reconcile gets/creates/updates a network interface.
 func (s *Service) Reconcile(ctx context.Context) error {
 	log := klogr.New()
+
+	machineName := s.Scope.Name()
+	nicName := azure.GenerateNICName(machineName)
+	//check if network interface for this machine exists
+	_, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nicName)
+	switch {
+	case err != nil && !azure.ResourceNotFound(err):
+		return errors.Wrapf(err, "failed to fetch network interface %s", nicName)
+	case err == nil:
+		// network interface already exists for machine, do nothing
+		return nil
+	}
+    // if nic is not created for a machine
 	for _, nicSpec := range s.Scope.NICSpecs() {
 
 		_, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
