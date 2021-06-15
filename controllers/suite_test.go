@@ -23,9 +23,11 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	v1 "k8s.io/api/core/v1"
+	"k8s.io/kubectl/pkg/scheme"
 	"sigs.k8s.io/controller-runtime/pkg/controller"
 	"sigs.k8s.io/controller-runtime/pkg/envtest/printer"
 
+	infrastructurev1alpha3 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 	"github.com/niachary/cluster-api-provider-azure/internal/test/env"
 	// +kubebuilder:scaffold:imports
 )
@@ -60,6 +62,9 @@ var _ = BeforeSuite(func(done Done) {
 		Log:      testEnv.Log,
 		Recorder: testEnv.GetEventRecorderFor("azuremachine-reconciler"),
 	}).SetupWithManager(testEnv.Manager, controller.Options{MaxConcurrentReconciles: 1})).To(Succeed())
+
+	err = infrastructurev1alpha3.AddToScheme(scheme.Scheme)
+	Expect(err).NotTo(HaveOccurred())
 
 	// +kubebuilder:scaffold:scheme
 

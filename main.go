@@ -24,6 +24,7 @@ import (
 	"os"
 	"time"
 
+	infrastructurev1alpha3 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 	// +kubebuilder:scaffold:imports
 
 	"github.com/spf13/pflag"
@@ -67,6 +68,7 @@ func init() {
 	_ = infrav1alpha3exp.AddToScheme(scheme)
 	_ = clusterv1.AddToScheme(scheme)
 	_ = clusterv1exp.AddToScheme(scheme)
+	_ = infrastructurev1alpha3.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
@@ -246,7 +248,16 @@ func main() {
 			setupLog.Error(err, "unable to create controller", "controller", "AzureJSONMachine")
 			os.Exit(1)
 		}
-		
+		if err = (&controllers.AzureIPPoolReconciler{
+			Client: mgr.GetClient(),
+			Log:    ctrl.Log.WithName("controllers").WithName("AzureIPPool"),
+			Recorder:         mgr.GetEventRecorderFor("azureippool-reconciler"),
+			ReconcileTimeout: reconcileTimeout,
+		}).SetupWithManager(mgr, controller.Options{MaxConcurrentReconciles: azureMachineConcurrency}); err != nil {
+			setupLog.Error(err, "unable to create controller", "controller", "AzureIPPool")
+			os.Exit(1)
+		}
+
 		// just use CAPI MachinePool feature flag rather than create a new one
 		setupLog.V(1).Info(fmt.Sprintf("%+v\n", feature.Gates))
 		if feature.Gates.Enabled(capifeature.MachinePool) {
