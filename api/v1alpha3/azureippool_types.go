@@ -20,6 +20,12 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
+const (
+	// ClusterFinalizer allows ReconcileAzureIPPool to clean up Azure resources associated with AzureIPPool before
+	// removing it from the apiserver.
+	IPPoolFinalizer = "azureippool.infrastructure.cluster.x-k8s.io"
+)
+
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
@@ -29,7 +35,15 @@ type AzureIPPoolSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of AzureIPPool. Edit AzureIPPool_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Name string `json:"name"`
+
+	IPPool []string `json:"ipPool,omitempty"`
+
+	AllocatedIPs []string `json:"allocatedIps,omitempty"`
+
+	VnetName string `json:"vnetName"`
+
+	SubnetName string `json:"subnetName"`
 }
 
 // AzureIPPoolStatus defines the observed state of AzureIPPool

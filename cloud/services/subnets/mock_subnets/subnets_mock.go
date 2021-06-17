@@ -24,9 +24,9 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 	v1alpha3 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	reflect "reflect"
 )
 
 // MockSubnetScope is a mock of SubnetScope interface.
@@ -274,6 +274,20 @@ func (m *MockSubnetScope) RouteTable() *v1alpha3.RouteTable {
 func (mr *MockSubnetScopeMockRecorder) RouteTable() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockSubnetScope)(nil).RouteTable))
+}
+
+// APIServerIP mocks base method.
+func (m *MockSubnetScope) APIServerIP() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerIP")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerIP indicates an expected call of APIServerIP.
+func (mr *MockSubnetScopeMockRecorder) APIServerIP() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerIP", reflect.TypeOf((*MockSubnetScope)(nil).APIServerIP))
 }
 
 // Info mocks base method.

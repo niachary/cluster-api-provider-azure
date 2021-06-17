@@ -24,9 +24,9 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 	v1alpha3 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	reflect "reflect"
 )
 
 // MockNICScope is a mock of NICScope interface.
@@ -276,6 +276,20 @@ func (mr *MockNICScopeMockRecorder) RouteTable() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockNICScope)(nil).RouteTable))
 }
 
+// APIServerIP mocks base method.
+func (m *MockNICScope) APIServerIP() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerIP")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerIP indicates an expected call of APIServerIP.
+func (mr *MockNICScopeMockRecorder) APIServerIP() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerIP", reflect.TypeOf((*MockNICScope)(nil).APIServerIP))
+}
+
 // Info mocks base method.
 func (m *MockNICScope) Info(msg string, keysAndValues ...interface{}) {
 	m.ctrl.T.Helper()
@@ -382,4 +396,18 @@ func (m *MockNICScope) NICSpecs() []azure.NICSpec {
 func (mr *MockNICScopeMockRecorder) NICSpecs() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NICSpecs", reflect.TypeOf((*MockNICScope)(nil).NICSpecs))
+}
+
+// Name mocks base method.
+func (m *MockNICScope) Name() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Name")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// Name indicates an expected call of Name.
+func (mr *MockNICScopeMockRecorder) Name() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Name", reflect.TypeOf((*MockNICScope)(nil).Name))
 }

@@ -5,7 +5,7 @@ metadata:
   name: azureippool-viewer-role
 rules:
 - apiGroups:
-  - infrastructure.x-k8s.io
+  - infrastructure.cluster.x-k8s.io
   resources:
   - azureippools
   verbs:
@@ -13,7 +13,7 @@ rules:
   - list
   - watch
 - apiGroups:
-  - infrastructure.x-k8s.io
+  - infrastructure.cluster.x-k8s.io
   resources:
   - azureippools/status
   verbs:

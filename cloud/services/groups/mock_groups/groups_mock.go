@@ -24,8 +24,8 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 	v1alpha3 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	reflect "reflect"
 )
 
 // MockGroupScope is a mock of GroupScope interface.

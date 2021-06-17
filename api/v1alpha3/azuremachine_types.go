@@ -101,7 +101,7 @@ type AzureMachineSpec struct {
 	PrivateIPAddress string `json:"privateIPAddress,omitempty"`
 	ImageID          string `json:"imageID"`
 
-	NetworkInterfaces []NetworkInterface `json:"networkInterfaces"`
+	NetworkInterfaces []NetworkInterface `json:"networkInterfaces,omitempty"`
 }
 
 // SpotVMOptions defines the options relevant to running the Machine on Spot VMs

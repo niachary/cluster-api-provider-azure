@@ -59,6 +59,8 @@ spec:
                   type: string
                 description: AdditionalTags is an optional set of tags to add to Azure resources managed by the Azure provider, in addition to the ones added by default.
                 type: object
+              controlplaneendpoint:
+                type: string
               location:
                 type: string
               networkSpec:
@@ -84,46 +86,6 @@ spec:
                         role:
                           description: Role defines the subnet role (eg. Node, ControlPlane)
                           type: string
-                        securityGroup:
-                          description: SecurityGroup defines the NSG (network security group) that should be attached to this subnet.
-                          properties:
-                            id:
-                              type: string
-                            ingressRule:
-                              description: IngressRules is a slice of Azure ingress rules for security groups.
-                              items:
-                                description: IngressRule defines an Azure ingress rule for security groups.
-                                properties:
-                                  description:
-                                    type: string
-                                  destination:
-                                    description: Destination - The destination address prefix. CIDR or destination IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used.
-                                    type: string
-                                  destinationPorts:
-                                    description: DestinationPorts - The destination port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
-                                    type: string
-                                  protocol:
-                                    description: SecurityGroupProtocol defines the protocol type for a security group rule.
-                                    type: string
-                                  source:
-                                    description: Source - The CIDR or source IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used. If this is an ingress rule, specifies where network traffic originates from.
-                                    type: string
-                                  sourcePorts:
-                                    description: SourcePorts - The source port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
-                                    type: string
-                                required:
-                                - description
-                                - protocol
-                                type: object
-                              type: array
-                            name:
-                              type: string
-                            tags:
-                              additionalProperties:
-                                type: string
-                              description: Tags defines a map of tags.
-                              type: object
-                          type: object
                       required:
                       - name
                       type: object
@@ -155,6 +117,7 @@ spec:
               resourceGroup:
                 type: string
             required:
+            - controlplaneendpoint
             - location
             - resourceGroup
             type: object
@@ -216,49 +179,6 @@ spec:
                           type: string
                         description: Tags defines a map of tags.
                         type: object
-                    type: object
-                  securityGroups:
-                    additionalProperties:
-                      description: SecurityGroup defines an Azure security group.
-                      properties:
-                        id:
-                          type: string
-                        ingressRule:
-                          description: IngressRules is a slice of Azure ingress rules for security groups.
-                          items:
-                            description: IngressRule defines an Azure ingress rule for security groups.
-                            properties:
-                              description:
-                                type: string
-                              destination:
-                                description: Destination - The destination address prefix. CIDR or destination IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used.
-                                type: string
-                              destinationPorts:
-                                description: DestinationPorts - The destination port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
-                                type: string
-                              protocol:
-                                description: SecurityGroupProtocol defines the protocol type for a security group rule.
-                                type: string
-                              source:
-                                description: Source - The CIDR or source IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used. If this is an ingress rule, specifies where network traffic originates from.
-                                type: string
-                              sourcePorts:
-                                description: SourcePorts - The source port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
-                                type: string
-                            required:
-                            - description
-                            - protocol
-                            type: object
-                          type: array
-                        name:
-                          type: string
-                        tags:
-                          additionalProperties:
-                            type: string
-                          description: Tags defines a map of tags.
-                          type: object
-                      type: object
-                    description: SecurityGroups is a map from the role/kind of the security group to its unique name, if any.
                     type: object
                 type: object
               ready:
@@ -338,6 +258,7 @@ spec:
                 description: NetworkSpec encapsulates all things related to Azure network.
                 properties:
                   hasPublicIP:
+                    description: hasPublicIP is the boolean value representing whether the cluster should have public IP resource, set this value to False for managment cluster
                     type: boolean
                   subnets:
                     description: Subnets is the configuration for the control-plane subnet and the node subnet.
@@ -366,53 +287,6 @@ spec:
                               type: string
                             name:
                               type: string
-                          type: object
-                        securityGroup:
-                          description: SecurityGroup defines the NSG (network security group) that should be attached to this subnet.
-                          properties:
-                            id:
-                              type: string
-                            ingressRule:
-                              description: IngressRules is a slice of Azure ingress rules for security groups.
-                              items:
-                                description: IngressRule defines an Azure ingress rule for security groups.
-                                properties:
-                                  description:
-                                    type: string
-                                  destination:
-                                    description: Destination - The destination address prefix. CIDR or destination IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used.
-                                    type: string
-                                  destinationPorts:
-                                    description: DestinationPorts - The destination port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
-                                    type: string
-                                  name:
-                                    type: string
-                                  priority:
-                                    description: Priority - A number between 100 and 4096. Each rule should have a unique value for priority. Rules are processed in priority order, with lower numbers processed before higher numbers. Once traffic matches a rule, processing stops.
-                                    format: int32
-                                    type: integer
-                                  protocol:
-                                    description: SecurityGroupProtocol defines the protocol type for a security group rule.
-                                    type: string
-                                  source:
-                                    description: Source - The CIDR or source IP range. Asterix '*' can also be used to match all source IPs. Default tags such as 'VirtualNetwork', 'AzureLoadBalancer' and 'Internet' can also be used. If this is an ingress rule, specifies where network traffic originates from.
-                                    type: string
-                                  sourcePorts:
-                                    description: SourcePorts - The source port or range. Integer or range between 0 and 65535. Asterix '*' can also be used to match all ports.
-                                    type: string
-                                required:
-                                - description
-                                - name
-                                - protocol
-                                type: object
-                              type: array
-                            name:
-                              type: string
-                            tags:
-                              additionalProperties:
-                                type: string
-                              description: Tags defines a map of tags.
-                              type: object
                           type: object
                       required:
                       - name
@@ -447,6 +321,7 @@ spec:
               subscriptionID:
                 type: string
             required:
+            - controlPlaneEndpointIP
             - location
             type: object
           status:
@@ -548,6 +423,86 @@ spec:
     storage: true
     subresources:
       status: {}
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: capi-webhook-system/capz-serving-cert
+    controller-gen.kubebuilder.io/version: v0.3.0
+  labels:
+    cluster.x-k8s.io/provider: infrastructure-azure
+    cluster.x-k8s.io/v1alpha3: v1alpha3
+  name: azureippools.infrastructure.cluster.x-k8s.io
+spec:
+  conversion:
+    strategy: Webhook
+    webhook:
+      clientConfig:
+        caBundle: Cg==
+        service:
+          name: capz-webhook-service
+          namespace: system
+          path: /convert
+      conversionReviewVersions:
+      - v1
+      - v1beta1
+  group: infrastructure.cluster.x-k8s.io
+  names:
+    kind: AzureIPPool
+    listKind: AzureIPPoolList
+    plural: azureippools
+    singular: azureippool
+  scope: Namespaced
+  versions:
+  - name: v1alpha3
+    schema:
+      openAPIV3Schema:
+        description: AzureIPPool is the Schema for the azureippools API
+        properties:
+          apiVersion:
+            description: 'APIVersion defines the versioned schema of this representation of an object. Servers should convert recognized schemas to the latest internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+            type: string
+          kind:
+            description: 'Kind is a string value representing the REST resource this object represents. Servers may infer this from the endpoint the client submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AzureIPPoolSpec defines the desired state of AzureIPPool
+            properties:
+              allocatedIps:
+                items:
+                  type: string
+                type: array
+              ipPool:
+                items:
+                  type: string
+                type: array
+              name:
+                description: Foo is an example field of AzureIPPool. Edit AzureIPPool_types.go to remove/update
+                type: string
+              subnetName:
+                type: string
+              vnetName:
+                type: string
+            required:
+            - name
+            - subnetName
+            - vnetName
+            type: object
+          status:
+            description: AzureIPPoolStatus defines the observed state of AzureIPPool
+            type: object
+        type: object
+    served: true
+    storage: true
 status:
   acceptedNames:
     kind: ""
@@ -1153,26 +1108,31 @@ spec:
                 description: 'DEPRECATED: to support old clients, will be removed in v1alpha4'
                 type: string
               networkInterfaces:
-                description: Network Interfaces for a VM
                 items:
-                  description: Specifies a network interface that you want to add to the VM
+                  description: NetworkInterfaces allows user to add multiple nics to the VMs
                   properties:
                     isPrimary:
+                      description: Flag for Primary NIC
                       type: boolean
                     name:
+                      description: Name of the network interface
                       type: string
                     staticIPAddress:
+                      description: static IP address
                       type: string
                     subnetName:
+                      description: Name of the subnet
                       type: string
                     vnetName:
+                      description: Name of the vnet
                       type: string
                     vnetResourceGroup:
+                      description: Resource Group for the Vnet
                       type: string
                   required:
                   - name
-                  - vnetName
                   - subnetName
+                  - vnetName
                   - vnetResourceGroup
                   type: object
                 type: array
@@ -1210,6 +1170,8 @@ spec:
                 - managedDisk
                 - osType
                 type: object
+              privateIPAddress:
+                type: string
               providerID:
                 description: ProviderID is the unique identifier as specified by the cloud provider.
                 type: string
@@ -1237,11 +1199,12 @@ spec:
               vmSize:
                 type: string
             required:
+            - imageID
             - location
+            - networkInterfaces
             - osDisk
             - sshPublicKey
             - vmSize
-            - networkInterfaces
             type: object
           status:
             description: AzureMachineStatus defines the observed state of AzureMachine
@@ -1594,26 +1557,31 @@ spec:
                         description: 'DEPRECATED: to support old clients, will be removed in v1alpha4'
                         type: string
                       networkInterfaces:
-                        description: Network Interfaces for a VM
                         items:
-                          description: Specifies a network interface that you want to add to the VM
+                          description: NetworkInterfaces allows user to add multiple nics to the VMs
                           properties:
                             isPrimary:
+                              description: Flag for Primary NIC
                               type: boolean
                             name:
+                              description: Name of the network interface
                               type: string
                             staticIPAddress:
+                              description: static IP address
                               type: string
                             subnetName:
+                              description: Name of the subnet
                               type: string
                             vnetName:
+                              description: Name of the vnet
                               type: string
                             vnetResourceGroup:
+                              description: Resource Group for the Vnet
                               type: string
                           required:
                           - name
-                          - vnetName
                           - subnetName
+                          - vnetName
                           - vnetResourceGroup
                           type: object
                         type: array
@@ -1651,6 +1619,8 @@ spec:
                         - managedDisk
                         - osType
                         type: object
+                      privateIPAddress:
+                        type: string
                       providerID:
                         description: ProviderID is the unique identifier as specified by the cloud provider.
                         type: string
@@ -1678,11 +1648,12 @@ spec:
                       vmSize:
                         type: string
                     required:
+                    - imageID
                     - location
+                    - networkInterfaces
                     - osDisk
                     - sshPublicKey
                     - vmSize
-                    - networkInterfaces
                     type: object
                 required:
                 - spec
@@ -2178,6 +2149,26 @@ rules:
 - apiGroups:
   - infrastructure.cluster.x-k8s.io
   resources:
+  - azureippools
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
+  - azureippools/status
+  verbs:
+  - get
+  - patch
+  - update
+- apiGroups:
+  - infrastructure.cluster.x-k8s.io
+  resources:
   - azuremachines
   verbs:
   - create
@@ -2356,7 +2347,7 @@ spec:
         - --metrics-addr=127.0.0.1:8080
         - --webhook-port=9443
         - --feature-gates=MachinePool=${EXP_MACHINE_POOL:=false},AKS=${EXP_AKS:=false}
-        image: mocimages.azurecr.io/cluster-api-azure-controller-amd64:master
+        image: niachary/cluster-api-azure-controller-amd64:dev
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
@@ -2462,7 +2453,7 @@ spec:
             secretKeyRef:
               key: arm-endpoint
               name: capz-manager-bootstrap-credentials
-        image: mocimages.azurecr.io/cluster-api-azure-controller-amd64:master
+        image: niachary/cluster-api-azure-controller-amd64:dev
         imagePullPolicy: Always
         livenessProbe:
           httpGet:

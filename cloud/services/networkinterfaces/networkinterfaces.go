@@ -43,8 +43,9 @@ func (s *Service) Reconcile(ctx context.Context) error {
 		// network interface already exists for machine, do nothing
 		return nil
 	}
+	nics  := s.Scope.NICSpecs()
     // if nic is not created for a machine
-	for _, nicSpec := range s.Scope.NICSpecs() {
+	for _, nicSpec := range(nics) {
 
 		_, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
 		switch {
@@ -146,7 +147,8 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the network interface with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	for _, nicSpec := range s.Scope.NICSpecs() {
+	nics := s.Scope.NICSpecs()
+	for _, nicSpec := range nics {
 		s.Scope.V(2).Info("deleting network interface %s", "network interface", nicSpec.Name)
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
 		if err != nil && !azure.ResourceNotFound(err) {

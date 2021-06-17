@@ -24,9 +24,9 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 	v1alpha3 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	reflect "reflect"
 )
 
 // MockPublicIPScope is a mock of PublicIPScope interface.
@@ -368,6 +368,20 @@ func (m *MockPublicIPScope) RouteTable() *v1alpha3.RouteTable {
 func (mr *MockPublicIPScopeMockRecorder) RouteTable() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockPublicIPScope)(nil).RouteTable))
+}
+
+// APIServerIP mocks base method.
+func (m *MockPublicIPScope) APIServerIP() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerIP")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerIP indicates an expected call of APIServerIP.
+func (mr *MockPublicIPScopeMockRecorder) APIServerIP() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerIP", reflect.TypeOf((*MockPublicIPScope)(nil).APIServerIP))
 }
 
 // PublicIPSpecs mocks base method.

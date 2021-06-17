@@ -12,7 +12,7 @@ resources:
   - bases/exp.infrastructure.cluster.x-k8s.io_azuremanagedmachinepools.yaml
   - bases/exp.infrastructure.cluster.x-k8s.io_azuremanagedclusters.yaml
   - bases/exp.infrastructure.cluster.x-k8s.io_azuremanagedcontrolplanes.yaml
-- bases/infrastructure.x-k8s.io_azureippools.yaml
+  - bases/infrastructure.cluster.x-k8s.io_azureippools.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 

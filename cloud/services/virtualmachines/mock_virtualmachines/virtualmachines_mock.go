@@ -25,10 +25,10 @@ import (
 	autorest "github.com/Azure/go-autorest/autorest"
 	logr "github.com/go-logr/logr"
 	gomock "github.com/golang/mock/gomock"
-	v1 "k8s.io/api/core/v1"
-	reflect "reflect"
 	v1alpha3 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 	azure "github.com/niachary/cluster-api-provider-azure/cloud"
+	v1 "k8s.io/api/core/v1"
+	reflect "reflect"
 )
 
 // MockVMScope is a mock of VMScope interface.
@@ -276,6 +276,20 @@ func (m *MockVMScope) RouteTable() *v1alpha3.RouteTable {
 func (mr *MockVMScopeMockRecorder) RouteTable() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockVMScope)(nil).RouteTable))
+}
+
+// APIServerIP mocks base method.
+func (m *MockVMScope) APIServerIP() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerIP")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerIP indicates an expected call of APIServerIP.
+func (mr *MockVMScopeMockRecorder) APIServerIP() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerIP", reflect.TypeOf((*MockVMScope)(nil).APIServerIP))
 }
 
 // Info mocks base method.

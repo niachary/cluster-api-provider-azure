@@ -24,8 +24,8 @@ import (
 	context "context"
 	autorest "github.com/Azure/go-autorest/autorest"
 	gomock "github.com/golang/mock/gomock"
-	reflect "reflect"
 	v1alpha3 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
+	reflect "reflect"
 )
 
 // MockService is a mock of Service interface.
@@ -562,4 +562,18 @@ func (m *MockClusterDescriber) RouteTable() *v1alpha3.RouteTable {
 func (mr *MockClusterDescriberMockRecorder) RouteTable() *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RouteTable", reflect.TypeOf((*MockClusterDescriber)(nil).RouteTable))
+}
+
+// APIServerIP mocks base method.
+func (m *MockClusterDescriber) APIServerIP() string {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "APIServerIP")
+	ret0, _ := ret[0].(string)
+	return ret0
+}
+
+// APIServerIP indicates an expected call of APIServerIP.
+func (mr *MockClusterDescriberMockRecorder) APIServerIP() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "APIServerIP", reflect.TypeOf((*MockClusterDescriber)(nil).APIServerIP))
 }

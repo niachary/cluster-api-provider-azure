@@ -393,10 +393,42 @@ spec:
                     - version
                     type: object
                 type: object
+              imageID:
+                type: string
               location:
                 description: 'DEPRECATED: to support old clients, will be removed
                   in v1alpha4'
                 type: string
+              networkInterfaces:
+                items:
+                  description: NetworkInterfaces allows user to add multiple nics
+                    to the VMs
+                  properties:
+                    isPrimary:
+                      description: Flag for Primary NIC
+                      type: boolean
+                    name:
+                      description: Name of the network interface
+                      type: string
+                    staticIPAddress:
+                      description: static IP address
+                      type: string
+                    subnetName:
+                      description: Name of the subnet
+                      type: string
+                    vnetName:
+                      description: Name of the vnet
+                      type: string
+                    vnetResourceGroup:
+                      description: Resource Group for the Vnet
+                      type: string
+                  required:
+                  - name
+                  - subnetName
+                  - vnetName
+                  - vnetResourceGroup
+                  type: object
+                type: array
               osDisk:
                 description: OSDisk specifies the parameters for the operating system
                   disk of the machine
@@ -436,6 +468,8 @@ spec:
                 - managedDisk
                 - osType
                 type: object
+              privateIPAddress:
+                type: string
               providerID:
                 description: ProviderID is the unique identifier as specified by the
                   cloud provider.
@@ -450,32 +484,6 @@ spec:
                     type: number
                 type: object
               sshPublicKey:
-                type: string
-              networkInterfaces:
-                description: Network Interfaces for a VM
-                items:
-                  description: Specifies a network interface that you want to add to the VM
-                  properties:
-                    name:
-                      type: string
-                    vnetName:
-                      type: string
-                    subnetName:
-                      type: string
-                    vnetResourceGroup:
-                      type: string
-                    isPrimary:
-                      type: boolean
-                    staticIPAddress:
-                      type: string
-                  required:
-                  - name
-                  - vnetName
-                  - subnetName
-                  - vnetResourceGroup
-                  type: object
-                type: array  
-              imageID:
                 type: string
               userAssignedIdentities:
                 description: UserAssignedIdentities is a list of standalone Azure
@@ -496,11 +504,11 @@ spec:
               vmSize:
                 type: string
             required:
+            - imageID
             - location
             - osDisk
             - sshPublicKey
             - vmSize
-            - networkInterfaces
             type: object
           status:
             description: AzureMachineStatus defines the observed state of AzureMachine

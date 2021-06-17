@@ -38,10 +38,13 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 	"sigs.k8s.io/controller-runtime/pkg/source"
+	azure "github.com/niachary/cluster-api-provider-azure/cloud"
 
 	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 	"github.com/niachary/cluster-api-provider-azure/cloud/scope"
 	"github.com/niachary/cluster-api-provider-azure/util/reconciler"
+	"k8s.io/klog/klogr"
+	"fmt"
 )
 
 // AzureMachineReconciler reconciles a AzureMachine object
@@ -177,6 +180,31 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 		return reconcile.Result{}, err
 	}
 
+	//Fetch the AzureIPPool
+	azureIPPoolName := client.ObjectKey{
+		Namespace: "default",
+		Name:      "ase-ip-pool", //get the ip-pool-name from the cluster spec
+	}
+	azureIPPool := &infrav1.AzureIPPool{}
+	if err := r.Client.Get(ctx, azureIPPoolName, azureIPPool); err != nil {
+	// is this event fine?
+	r.Recorder.Eventf(azureMachine, corev1.EventTypeWarning, "Error getting the AzureIPpool", err.Error())
+	return reconcile.Result{}, errors.Wrapf(err, "Failed to retrieve Azure IP pool")
+	}
+
+	logger = logger.WithValues("AzureIPPool", azureIPPool.Name)
+	
+	//Create AzureIPPoolScope
+	azureIPPoolScope, err := scope.NewIPPoolScope(scope.IPPoolScopeParams{
+		Client:       r.Client,
+		Logger:       logger,
+		AzureIPPool: azureIPPool,
+	})
+	if err != nil {
+		r.Recorder.Eventf(azureIPPool, corev1.EventTypeWarning, "Error creating the ip pool scope", err.Error())
+		return reconcile.Result{}, err
+	}
+
 	// Create the machine scope
 	machineScope, err := scope.NewMachineScope(scope.MachineScopeParams{
 		Logger:           logger,
@@ -208,14 +236,14 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 
 	// Handle deleted machines
 	if !azureMachine.ObjectMeta.DeletionTimestamp.IsZero() {
-		return r.reconcileDelete(ctx, machineScope, clusterScope)
+		return r.reconcileDelete(ctx, machineScope, clusterScope, azureIPPoolScope)
 	}
 
 	// Handle non-deleted machines
-	return r.reconcileNormal(ctx, machineScope, clusterScope)
+	return r.reconcileNormal(ctx, machineScope, clusterScope, azureIPPoolScope)
 }
 
-func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (reconcile.Result, error) {
+func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope, azureIPPoolScope *scope.AzureIPPoolScope) (reconcile.Result, error) {
 	machineScope.Info("Reconciling AzureMachine")
 	// If the AzureMachine is in an error state, return early.
 	if machineScope.AzureMachine.Status.FailureReason != nil || machineScope.AzureMachine.Status.FailureMessage != nil {
@@ -255,6 +283,17 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		}
 	}
 
+	log := klogr.New()
+	//find a better way to check if IPs are already assiged to the machine
+	log.Info(fmt.Sprintf("length of network interface is %d",len(machineScope.AzureMachine.Spec.NetworkInterfaces)))
+	if (len(machineScope.AzureMachine.Spec.NetworkInterfaces) == 0){
+		log.Info("calling reconcileAzureMachineIPAddress")
+		if err:= r.reconcileAzureMachineIPAddress(ctx, machineScope, clusterScope, azureIPPoolScope); err!= nil {
+			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IPPool", errors.Wrapf(err, "error reconciling IPPool for machine %s", machineScope.Name()).Error())
+			return reconcile.Result{}, errors.Wrapf(err, "failed to retrieve Azure IP pool")
+		}
+	}
+    
 	ams := newAzureMachineService(machineScope, clusterScope)
 
 	err := ams.Reconcile(ctx)
@@ -304,12 +343,88 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 	return reconcile.Result{}, nil
 }
 
-func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope) (_ reconcile.Result, reterr error) {
+func (r *AzureMachineReconciler) reconcileAzureMachineIPAddress(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope, azureIPPoolScope *scope.AzureIPPoolScope) (reterr error) {
+	machineScope.Info("Reconciling AzureMachineIPAddress")
+	log := klogr.New()
+	log.Info("Executing reconcileAzureMachineIPAddress")
+
+	machineIP := ""
+	if machineScope.IsControlPlane() {
+		machineIP = clusterScope.APIServerIP()
+	}
+	log.Info(fmt.Sprintf("machineIP is %s", machineIP))
+
+	azureippool, err := azureIPPoolScope.GetIPPoolObj(ctx, "default","ase-ip-pool")
+	if err!=nil {
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IPPool", errors.Wrapf(err, "error reconciling IPPool for machine %s", machineScope.Name()).Error())
+		return errors.Wrapf(err, "Failed to retrieve Azure IP pool")
+	}
+	
+	//Build network interface spec for the machine
+	networkInterface := infrav1.NetworkInterface{}
+	networkInterface.Name = azure.GenerateNICName(machineScope.Name())
+	networkInterface.VnetName = azureippool.Spec.VnetName
+	networkInterface.SubnetName = azureippool.Spec.SubnetName
+	networkInterface.VnetResourceGroup = "aserg"
+	networkInterface.IsPrimary = true
+
+	allocatedIP, err := azureIPPoolScope.GetFromFreeIPPool(ctx, "default", "ase-ip-pool", machineIP)
+	if err!=nil {
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IPPool", errors.Wrapf(err, "error reconciling IPPool for machine %s", machineScope.Name()).Error())
+		return errors.Wrapf(err, "Failed to get free IP from Azure IP pool")
+	}
+
+	log.Info(fmt.Sprintf("Allocated IP %s", allocatedIP))
+
+	//assign the free IP to networkInterface spec
+	networkInterface.StaticIPAddress = allocatedIP
+
+	err = azureIPPoolScope.AddToAllocatedIPPool(ctx, "default", "ase-ip-pool", allocatedIP)
+	if err!=nil {
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IPPool", errors.Wrapf(err, "error reconciling IPPool for machine %s", machineScope.Name()).Error())
+		return errors.Wrapf(err, "Failed to add IP to Allocated IP pool")
+	}
+
+	machineScope.AzureMachine.Spec.NetworkInterfaces = append(machineScope.AzureMachine.Spec.NetworkInterfaces, networkInterface)
+	log.Info(fmt.Sprintf("Network Interface for machine %s is  %v", machineScope.Name(), machineScope.AzureMachine.Spec.NetworkInterfaces))
+
+	return nil
+}
+
+
+func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope, azureIPPoolScope *scope.AzureIPPoolScope) (_ reconcile.Result, reterr error) {
 	machineScope.Info("Handling deleted AzureMachine")
+	log := klogr.New()
 
 	if err := newAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureCluster", errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
+	}
+
+	azureIPPoolName := client.ObjectKey{
+		Namespace: "default",
+		Name:      "ase-ip-pool",
+	}
+	
+	azureippool, err := azureIPPoolScope.GetIPPoolObj(ctx, "default","ase-ip-pool")
+	if err!=nil {
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error retrieving IPPool", errors.Wrapf(err, "error retrieving IPPool for machine %s", machineScope.Name()).Error())
+		return reconcile.Result{}, errors.Wrapf(err, "Failed to retrieve Azure IP pool")
+	}
+	
+	nic := machineScope.AzureMachine.Spec.NetworkInterfaces[0]
+	freeIP := nic.StaticIPAddress
+
+	err = azureIPPoolScope.RemoveFromAllocatedIPPool(ctx, "default","ase-ip-pool", freeIP)
+	if err!=nil {
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error removing IP from allocated IPPool", errors.Wrapf(err, "error removing IP from allocated IPPool for machine %s", machineScope.Name()).Error())
+		return reconcile.Result{}, errors.Wrapf(err, "Failed to retrieve Azure IP pool")
+	}
+
+	err = azureIPPoolScope.AddToFreeIPPool(ctx, "default","ase-ip-pool", freeIP)
+	if err!=nil {
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error adding IP to free IPPool", errors.Wrapf(err, "error adding IP to free IPPool for machine %s", machineScope.Name()).Error())
+		return reconcile.Result{}, errors.Wrapf(err, "Failed to retrieve Azure IP pool")
 	}
 
 	defer func() {

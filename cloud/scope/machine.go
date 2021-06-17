@@ -143,58 +143,11 @@ func (m *MachineScope) InboundNatSpecs() []azure.InboundNatSpec {
 }
 
 // NICSpecs returns the network interface specs.
-func (m *MachineScope) NICSpecs() []azure.NICSpec {
+func (m *MachineScope) NICSpecs() ([]azure.NICSpec) {
 	log := klogr.New()
 	specs := []azure.NICSpec{}
 
-	//if the machine does not have an IP
-	/*1) for control plane, make sure that you take the IP for API Server from the Pool
-	  2) for node IPs, take any IP from the pool
-	  3) create the nic spec
-	  4) create the nic
-	  5) add the IP to used IP pool list
-	*/
 	//
-	if m.IsControlPlane(){
-		apiServerIP := m.ClusterDescriber.APIServerIP()
-		log.Info(apiServerIP)
-		//m.GetFreeIP(apiServerIP)
-		// get this IP from the IP pool	
-	}else{
-		// get any ip from the IP pool
-	}
-	
-
-
-	//get one free ip from the free IP pool
-	//ip = getFreeIP()
-
-	/*log.Info(fmt.Sprintf("Creating nic spec for machine: %s",m.Name()))
-	spec := azure.NICSpec{
-			Name: 				   ,
-			MachineName:		   m.Name(),
-			VNetName:              networkInterface.VnetName,	
-			VNetResourceGroup:     networkInterface.VnetResourceGroup,
-			SubnetName:            networkInterface.SubnetName,
-			VMSize:                m.AzureMachine.Spec.VMSize,
-			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
-			StaticIPAddress: 	   networkInterface.StaticIPAddress,
-	}
-	specs = append(specs, spec)
-	
-	if m.AzureMachine.Spec.AllocatePublicIP == true {
-		specs = append(specs, azure.NICSpec{
-			Name:                  azure.GeneratePublicNICName(m.Name()),
-			MachineName:           m.Name(),
-			VNetName:              m.Vnet().Name,
-			VNetResourceGroup:     m.Vnet().ResourceGroup,
-			SubnetName:            m.Subnet().Name,
-			PublicIPName:          azure.GenerateNodePublicIPName(m.Name()),
-			VMSize:                m.AzureMachine.Spec.VMSize,
-			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
-		})
-	}
-	return specs*/
 
 	for _, networkInterface := range m.AzureMachine.Spec.NetworkInterfaces {
 		log.Info(fmt.Sprintf("Creating spec for Network Interface: %s",networkInterface.Name))
@@ -226,8 +179,9 @@ func (m *MachineScope) NICSpecs() []azure.NICSpec {
 }
 
 func (m *MachineScope) NICNames() []string {
-	nicNames := make([]string, len(m.NICSpecs()))
-	for i, nic := range m.NICSpecs() {
+	nics := m.NICSpecs()
+	nicNames := make([]string, len(nics))
+	for i, nic := range nics {
 		nicNames[i] = nic.Name
 	}
 	return nicNames
@@ -477,16 +431,29 @@ func (m *MachineScope) GetVMImage() (*infrav1.Image, error) {
 }
 
 // GetBootstrapData returns the bootstrap data from the secret in the Machine's bootstrap.dataSecretName.
-/*func (m *MachineScope) GetFreeIP(Ip string) (string, error) {
+/*func (m *MachineScope) GetFreeIP(apiServerIP string) (string, error) {
 	azureIPPoolName := client.ObjectKey{
 		Namespace: "default",
 		Name:      "ase-ip-pool",
 	}
-	ippool := &infrav1.IPPool{}
-	if err := m.client.Get(context.Context, azureIPPoolName, ippool); err != nil {
-	
-	return reconcile.Result{}, nil	
+	ctx := context.Background()
+	azureippool := &infrav1.AzureIPPool{}
+	if err := m.client.Get(ctx, azureIPPoolName, azureippool); err != nil {
+	return "", errors.Wrapf(err, "failed to retrieve Azure IP pool")
 	}
+
+	// apiServerIP will be sent as "" in case of worker nodes
+	if (apiServerIP == ""){
+		return azureippool.Spec.IPPool[0] , nil
+	}else{
+		for _, ip := range azureippool.Spec.IPPool {
+			if(ip == apiServerIP){
+				return ip, nil
+			}
+		}
+	}
+
+	return "", errors.New("Could not find apiServerIP in any of the free IPs")
 }*/
 
 
