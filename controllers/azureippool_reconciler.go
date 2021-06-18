@@ -43,7 +43,3 @@ func (r *azureIPPoolReconciler) Reconcile(ctx context.Context) error {
 func (r *azureIPPoolReconciler) Delete(ctx context.Context) error {
 	return nil
 }
-
-func (r *azureIPPoolReconciler) Delete(ctx context.Context) error {
-	return nil
-} 

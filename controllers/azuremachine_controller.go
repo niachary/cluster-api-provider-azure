@@ -394,37 +394,28 @@ func (r *AzureMachineReconciler) reconcileAzureMachineIPAddress(ctx context.Cont
 
 func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope, azureIPPoolScope *scope.AzureIPPoolScope) (_ reconcile.Result, reterr error) {
 	machineScope.Info("Handling deleted AzureMachine")
-	log := klogr.New()
 
 	if err := newAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureCluster", errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
 	}
-
-	azureIPPoolName := client.ObjectKey{
-		Namespace: "default",
-		Name:      "ase-ip-pool",
-	}
 	
-	azureippool, err := azureIPPoolScope.GetIPPoolObj(ctx, "default","ase-ip-pool")
-	if err!=nil {
-		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error retrieving IPPool", errors.Wrapf(err, "error retrieving IPPool for machine %s", machineScope.Name()).Error())
-		return reconcile.Result{}, errors.Wrapf(err, "Failed to retrieve Azure IP pool")
-	}
-	
-	nic := machineScope.AzureMachine.Spec.NetworkInterfaces[0]
-	freeIP := nic.StaticIPAddress
+	if len(machineScope.AzureMachine.Spec.NetworkInterfaces) > 0 {
+		nic := machineScope.AzureMachine.Spec.NetworkInterfaces[0]
+		freeIP := nic.StaticIPAddress
 
-	err = azureIPPoolScope.RemoveFromAllocatedIPPool(ctx, "default","ase-ip-pool", freeIP)
-	if err!=nil {
-		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error removing IP from allocated IPPool", errors.Wrapf(err, "error removing IP from allocated IPPool for machine %s", machineScope.Name()).Error())
-		return reconcile.Result{}, errors.Wrapf(err, "Failed to retrieve Azure IP pool")
-	}
+		err := azureIPPoolScope.RemoveFromAllocatedIPPool(ctx, "default","ase-ip-pool", freeIP)
+		if err!=nil {
+			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error removing IP from allocated IPPool", errors.Wrapf(err, "error removing IP from allocated IPPool for machine %s", machineScope.Name()).Error())
+			return reconcile.Result{}, errors.Wrapf(err, "Failed to retrieve Azure IP pool")
+		}
 
-	err = azureIPPoolScope.AddToFreeIPPool(ctx, "default","ase-ip-pool", freeIP)
-	if err!=nil {
-		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error adding IP to free IPPool", errors.Wrapf(err, "error adding IP to free IPPool for machine %s", machineScope.Name()).Error())
-		return reconcile.Result{}, errors.Wrapf(err, "Failed to retrieve Azure IP pool")
+		err = azureIPPoolScope.AddToFreeIPPool(ctx, "default","ase-ip-pool", freeIP)
+		if err!=nil {
+			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error adding IP to free IPPool", errors.Wrapf(err, "error adding IP to free IPPool for machine %s", machineScope.Name()).Error())
+			return reconcile.Result{}, errors.Wrapf(err, "Failed to retrieve Azure IP pool")
+		}
+		machineScope.AzureMachine.Spec.NetworkInterfaces = nil
 	}
 
 	defer func() {
