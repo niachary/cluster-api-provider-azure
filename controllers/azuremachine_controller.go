@@ -234,7 +234,7 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
 			reterr = err
 		}
 	}()
-
+	
 	// Handle deleted machines
 	if !azureMachine.ObjectMeta.DeletionTimestamp.IsZero() {
 		return r.reconcileDelete(ctx, machineScope, clusterScope, azureIPPoolScope)
@@ -400,6 +400,7 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 	machineScope.Info("Handling deleted AzureMachine")
 	
 	log := klogr.New()
+	lock := sync.RWMutex{}
 
 	if err := newAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureCluster", errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
@@ -407,7 +408,8 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 	}
 
 	log.Info(fmt.Sprintf("After deleting azure machine %s",machineScope.Name()))
-	
+
+	lock.Lock()	
 	if len(machineScope.AzureMachine.Spec.NetworkInterfaces) > 0 {
 		log.Info("Inside free IPs for azuremachine %s",machineScope.Name())
 		nic := machineScope.AzureMachine.Spec.NetworkInterfaces[0]
@@ -433,6 +435,7 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 			controllerutil.RemoveFinalizer(machineScope.AzureMachine, infrav1.MachineFinalizer)
 		}
 	}()
-
+	lock.Unlock()
+		
 	return reconcile.Result{}, nil
 }
