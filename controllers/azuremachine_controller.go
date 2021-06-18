@@ -19,6 +19,7 @@ package controllers
 import (
 	"context"
 	"time"
+	"sync"
 
 	"github.com/go-logr/logr"
 	"github.com/pkg/errors"
@@ -283,6 +284,8 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		}
 	}
 
+	lock := sync.RWMutex{}
+	lock.Lock()
 	log := klogr.New()
 	//find a better way to check if IPs are already assiged to the machine
 	log.Info(fmt.Sprintf("length of network interface is %d",len(machineScope.AzureMachine.Spec.NetworkInterfaces)))
@@ -293,6 +296,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 			return reconcile.Result{}, errors.Wrapf(err, "failed to retrieve Azure IP pool")
 		}
 	}
+	lock.Unlock()
     
 	ams := newAzureMachineService(machineScope, clusterScope)
 
@@ -394,13 +398,18 @@ func (r *AzureMachineReconciler) reconcileAzureMachineIPAddress(ctx context.Cont
 
 func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineScope *scope.MachineScope, clusterScope *scope.ClusterScope, azureIPPoolScope *scope.AzureIPPoolScope) (_ reconcile.Result, reterr error) {
 	machineScope.Info("Handling deleted AzureMachine")
+	
+	log := klogr.New()
 
 	if err := newAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureCluster", errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
 		return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
 	}
+
+	log.Info(fmt.Sprintf("After deleting azure machine %s",machineScope.Name()))
 	
 	if len(machineScope.AzureMachine.Spec.NetworkInterfaces) > 0 {
+		log.Info("Inside free IPs for azuremachine %s",machineScope.Name())
 		nic := machineScope.AzureMachine.Spec.NetworkInterfaces[0]
 		freeIP := nic.StaticIPAddress
 
