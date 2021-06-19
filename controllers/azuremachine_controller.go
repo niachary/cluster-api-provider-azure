@@ -284,7 +284,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		}
 	}
 
-	lock := sync.RWMutex{}
+	lock := sync.Mutex{}
 	lock.Lock()
 	log := klogr.New()
 	//find a better way to check if IPs are already assiged to the machine
@@ -400,7 +400,7 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 	machineScope.Info("Handling deleted AzureMachine")
 	
 	log := klogr.New()
-	lock := sync.RWMutex{}
+	lock := sync.Mutex{}
 
 	if err := newAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureCluster", errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
