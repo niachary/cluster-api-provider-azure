@@ -284,10 +284,12 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 		}
 	}
 
+	log := klogr.New()
 	lock := sync.Mutex{}
 	lock.Lock()
-	log := klogr.New()
-	//find a better way to check if IPs are already assiged to the machine
+	// locking for one thread of a machine
+	log.Info(fmt.Sprintf("Locking for machine %s", machineScope.Name()))
+	//check if this info can be stored in spec?
 	log.Info(fmt.Sprintf("length of network interface is %d",len(machineScope.AzureMachine.Spec.NetworkInterfaces)))
 	if (len(machineScope.AzureMachine.Spec.NetworkInterfaces) == 0){
 		log.Info("calling reconcileAzureMachineIPAddress")
@@ -296,6 +298,7 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
 			return reconcile.Result{}, errors.Wrapf(err, "failed to retrieve Azure IP pool")
 		}
 	}
+	log.Info(fmt.Sprintf("Unlocking for machine %s", machineScope.Name()))
 	lock.Unlock()
     
 	ams := newAzureMachineService(machineScope, clusterScope)
@@ -409,7 +412,8 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 
 	log.Info(fmt.Sprintf("After deleting azure machine %s",machineScope.Name()))
 
-	lock.Lock()	
+	lock.Lock()
+	log.Info(fmt.Sprintf("Locking for machine %s", machineScope.Name()))
 	log.Info(fmt.Sprintf("Inside lock of reconcileDelete for machine %s", machineScope.Name()))
 	if len(machineScope.AzureMachine.Spec.NetworkInterfaces) > 0 {
 		log.Info("Inside free IPs for azuremachine %s",machineScope.Name())
@@ -436,6 +440,7 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 			controllerutil.RemoveFinalizer(machineScope.AzureMachine, infrav1.MachineFinalizer)
 		}
 	}()
+	log.Info(fmt.Sprintf("Unlocking for machine %s", machineScope.Name()))
 	lock.Unlock()
 
 	return reconcile.Result{}, nil
