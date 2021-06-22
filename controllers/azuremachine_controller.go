@@ -431,7 +431,8 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error adding IP to free IPPool", errors.Wrapf(err, "error adding IP to free IPPool for machine %s", machineScope.Name()).Error())
 			return reconcile.Result{}, errors.Wrapf(err, "Failed to retrieve Azure IP pool")
 		}
-		machineScope.AzureMachine.Spec.NetworkInterfaces = nil
+		// assign the network interface as nil
+		machineScope.AzureMachine.Spec.NetworkInterfaces = []infrav1.NetworkInterface{}
 	}
 
 	defer func() {
