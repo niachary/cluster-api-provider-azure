@@ -375,7 +375,7 @@ func (r *AzureMachineReconciler) reconcileAzureMachineIPAddress(machineScope *sc
 	networkInterface.VnetResourceGroup = "aserg"
 	networkInterface.IsPrimary = true
 
-	allocatedIP, err := azureIPPoolScope.GetFromFreeIPPool(machineScope, ctx, "default", "ase-ip-pool", machineIP)
+	azureippool, allocatedIP, err := azureIPPoolScope.GetFromFreeIPPool(machineScope, azureippool, machineIP)
 	if err!=nil {
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IPPool", errors.Wrapf(err, "error reconciling IPPool for machine %s", machineScope.Name()).Error())
 		return errors.Wrapf(err, "Failed to get free IP from Azure IP pool")
@@ -386,15 +386,21 @@ func (r *AzureMachineReconciler) reconcileAzureMachineIPAddress(machineScope *sc
 	//assign the free IP to networkInterface spec
 	networkInterface.StaticIPAddress = allocatedIP
 
-	err = azureIPPoolScope.AddToAllocatedIPPool(machineScope, ctx, "default", "ase-ip-pool", allocatedIP)
+	azureippool, err = azureIPPoolScope.AddToAllocatedIPPool(machineScope, azureippool, allocatedIP)
 	if err!=nil {
 		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IPPool", errors.Wrapf(err, "error reconciling IPPool for machine %s", machineScope.Name()).Error())
 		return errors.Wrapf(err, "Failed to add IP to Allocated IP pool")
 	}
 
+	err = azureIPPoolScope.UpdateIPPool(ctx, azureippool)
+	if err!=nil {
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error updating IPPool", errors.Wrapf(err, "error updating IPPool for machine %s", machineScope.Name()).Error())
+		return errors.Wrapf(err, "Failed to update IP pool")
+	}
+
 	machineScope.AzureMachine.Spec.NetworkInterfaces = append(machineScope.AzureMachine.Spec.NetworkInterfaces, networkInterface)
 	log.Info(fmt.Sprintf("Network Interface for machine %s is  %v", machineScope.Name(), machineScope.AzureMachine.Spec.NetworkInterfaces))
-
+	
 	return nil
 }
 
@@ -415,22 +421,36 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 	lock.Lock()
 	log.Info(fmt.Sprintf("Locking for machine %s", machineScope.Name()))
 	log.Info(fmt.Sprintf("Inside lock of reconcileDelete for machine %s", machineScope.Name()))
+
+	azureippool, err := azureIPPoolScope.GetIPPoolObj(ctx, "default","ase-ip-pool")
+	if err!=nil {
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IPPool", errors.Wrapf(err, "error reconciling IPPool for machine %s", machineScope.Name()).Error())
+		return reconcile.Result{}, errors.Wrapf(err, "Failed to retrieve Azure IP pool")
+	}
+
 	if len(machineScope.AzureMachine.Spec.NetworkInterfaces) > 0 {
 		log.Info("Inside free IPs for azuremachine %s",machineScope.Name())
 		nic := machineScope.AzureMachine.Spec.NetworkInterfaces[0]
 		freeIP := nic.StaticIPAddress
 
-		err := azureIPPoolScope.RemoveFromAllocatedIPPool(machineScope, ctx, "default","ase-ip-pool", freeIP)
+		azureippool, err := azureIPPoolScope.RemoveFromAllocatedIPPool(machineScope, azureippool , freeIP)
 		if err!=nil {
 			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error removing IP from allocated IPPool", errors.Wrapf(err, "error removing IP from allocated IPPool for machine %s", machineScope.Name()).Error())
 			return reconcile.Result{}, errors.Wrapf(err, "Failed to retrieve Azure IP pool")
 		}
 
-		err = azureIPPoolScope.AddToFreeIPPool(machineScope, ctx, "default","ase-ip-pool", freeIP)
+		azureippool, err = azureIPPoolScope.AddToFreeIPPool(machineScope, azureippool , freeIP)
 		if err!=nil {
 			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error adding IP to free IPPool", errors.Wrapf(err, "error adding IP to free IPPool for machine %s", machineScope.Name()).Error())
 			return reconcile.Result{}, errors.Wrapf(err, "Failed to retrieve Azure IP pool")
 		}
+
+		err = azureIPPoolScope.UpdateIPPool(ctx, azureippool)
+		if err!=nil {
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error updating IPPool", errors.Wrapf(err, "error updating IPPool for machine %s", machineScope.Name()).Error())
+		return reconcile.Result{}, errors.Wrapf(err, "Failed to update IP pool")
+		}
+
 		// assign the network interface as nil
 		machineScope.AzureMachine.Spec.NetworkInterfaces = []infrav1.NetworkInterface{}
 	}
