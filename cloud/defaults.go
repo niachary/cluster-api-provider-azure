@@ -25,6 +25,7 @@ import (
 	"k8s.io/klog/klogr"
 	infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
 	"github.com/niachary/cluster-api-provider-azure/version"
+	"k8s.io/apimachinery/pkg/util/rand"
 )
 
 const (
@@ -85,7 +86,7 @@ func GenerateNodePublicIPName(machineName string) string {
 
 // GenerateNICName generates the name of a network interface based on the name of a VM.
 func GenerateNICName(machineName string) string {
-	return fmt.Sprintf("%s-nic", machineName)
+	return fmt.Sprintf("%s-%s-nic", machineName, rand.String(5))
 }
 
 // GeneratePublicNICName generates the name of a public network interface based on the name of a VM.

@@ -33,23 +33,27 @@ const (
 type AzureIPPoolSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of AzureIPPool. Edit AzureIPPool_types.go to remove/update
-	Name string `json:"name"`
-
-	IPPool []string `json:"ipPool,omitempty"`
-
-	AllocatedIPs []string `json:"allocatedIps,omitempty"`
-
-	VnetName string `json:"vnetName"`
-
-	SubnetName string `json:"subnetName"`
+	IPPools []IPPool `json:"ipPools,omitempty"`
+	
 }
 
 // AzureIPPoolStatus defines the observed state of AzureIPPool
 type AzureIPPoolStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+}
+
+type IPPool struct {
+
+	Name string `json:"name"`
+
+	FreeIPs []string `json:"freeIPs,omitempty"`
+
+	AllocatedIPs []string `json:"allocatedIPs,omitempty"`
+
+	VnetName string `json:"vnetName"`
+
+	SubnetName string `json:"subnetName"`
 }
 
 // +kubebuilder:object:root=true

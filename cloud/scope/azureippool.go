@@ -98,7 +98,7 @@ func (s *AzureIPPoolScope) GetIPPoolObj(ctx context.Context, namespace string, i
 	return azureippool, nil
 }
 
-func (s *AzureIPPoolScope) GetFromFreeIPPool(machineScope *MachineScope, azureippool *infrav1.AzureIPPool, machineIP string) (*infrav1.AzureIPPool, string, error) {
+func (s *AzureIPPoolScope) GetFromFreeIPPool(machineScope *MachineScope, ippool *infrav1.IPPool, machineIP string) (string, error) {
 	log := klogr.New()
 	/*azureippool, err := s.GetIPPoolObj(ctx, namespace, ipPoolName)
 	if err!= nil {
@@ -108,30 +108,30 @@ func (s *AzureIPPoolScope) GetFromFreeIPPool(machineScope *MachineScope, azureip
 	allocatedIP := ""
 	if (machineIP == "") {
 		//networkInterface.StaticIPAddress = azureippool.Spec.IPPool[0]
-		allocatedIP = azureippool.Spec.IPPool[0]
-		log.Info(fmt.Sprintf("AzureIPPool before %v",azureippool.Spec.IPPool))
-		azureippool.Spec.IPPool = azureippool.Spec.IPPool[1:]
-		log.Info(fmt.Sprintf("AzureIPPool after %v",azureippool.Spec.IPPool))
+		allocatedIP = ippool.FreeIPs[0]
+		log.Info(fmt.Sprintf("AzureIPPool before %v",ippool.FreeIPs))
+		ippool.FreeIPs = ippool.FreeIPs[1:]
+		log.Info(fmt.Sprintf("AzureIPPool after %v",ippool.FreeIPs))
 	} else {
 		foundIP := false
-		for index, ip := range azureippool.Spec.IPPool {
+		for index, ip := range ippool.FreeIPs {
 			if(ip == machineIP){
 				foundIP = true
 				//networkInterface.StaticIPAddress = ip
 				allocatedIP = ip
-				log.Info(fmt.Sprintf("AzureIPPool before %v",azureippool.Spec.IPPool))
-				azureippool.Spec.IPPool = append(azureippool.Spec.IPPool[0:index], azureippool.Spec.IPPool[index+1:]...)
-				log.Info(fmt.Sprintf("AzureIPPool after %v",azureippool.Spec.IPPool))
+				log.Info(fmt.Sprintf("AzureIPPool before %v",ippool.FreeIPs))
+				ippool.FreeIPs = append(ippool.FreeIPs[0:index], ippool.FreeIPs[index+1:]...)
+				log.Info(fmt.Sprintf("AzureIPPool after %v",ippool.FreeIPs))
 				break;
 			}
 		}
 		// if ApiServer IP is not found in the free IP pool
 		if foundIP == false {
-			return nil , "" , errors.New("Failed to retrieve IP matching the APIServerIP from the free IP pool for control plane")
+			return "" , errors.New("Failed to retrieve IP matching the APIServerIP from the free IP pool for control plane")
 		}
 	}
 	
-	return azureippool, allocatedIP, nil
+	return allocatedIP, nil
 	
 	/*//updating the AzureIPPool CRD
 	log.Info(fmt.Sprintf("Updating the IP pool for machine name %s", machineScope.Name()))
@@ -142,7 +142,7 @@ func (s *AzureIPPoolScope) GetFromFreeIPPool(machineScope *MachineScope, azureip
 	return allocatedIP, nil*/
 }
 
-func (s *AzureIPPoolScope) AddToAllocatedIPPool(machineScope *MachineScope, azureippool *infrav1.AzureIPPool, allocatedIP string) (*infrav1.AzureIPPool, error) {
+func (s *AzureIPPoolScope) AddToAllocatedIPPool(machineScope *MachineScope, ippool *infrav1.IPPool, allocatedIP string) error {
 	log := klogr.New()
 	log.Info(fmt.Sprintf("Adding IP %s to allocated IP pool",allocatedIP))
 
@@ -151,16 +151,16 @@ func (s *AzureIPPoolScope) AddToAllocatedIPPool(machineScope *MachineScope, azur
 		return errors.Wrapf(err, "Failed to get ip pool while getting free IP for the machine")
 	}*/
 
-	if azureippool.Spec.AllocatedIPs == nil {
+	if ippool.AllocatedIPs == nil {
 		log.Info(fmt.Sprintf("AllocatedIPPool before is nil"))
 		allocatedIPs := []string{allocatedIP}
-		azureippool.Spec.AllocatedIPs = allocatedIPs
+		ippool.AllocatedIPs = allocatedIPs
 	}else {
-		log.Info(fmt.Sprintf("AllocatedIPPool before %v", azureippool.Spec.AllocatedIPs))
-		azureippool.Spec.AllocatedIPs = append(azureippool.Spec.AllocatedIPs, allocatedIP)
+		log.Info(fmt.Sprintf("AllocatedIPPool before %v", ippool.AllocatedIPs))
+		ippool.AllocatedIPs = append(ippool.AllocatedIPs, allocatedIP)
 	}
 
-	log.Info(fmt.Sprintf("AllocatedIPPool after %v",azureippool.Spec.AllocatedIPs))
+	log.Info(fmt.Sprintf("AllocatedIPPool after %v",ippool.AllocatedIPs))
 	
 	/*//updating the AzureIPPool CRD
 	if err := s.Client.Update(ctx, azureippool); err != nil {
@@ -168,7 +168,7 @@ func (s *AzureIPPoolScope) AddToAllocatedIPPool(machineScope *MachineScope, azur
 	}
 	log.Info(fmt.Sprintf("After updating the IP pool for machine name %s", machineScope.Name()))*/
 
-	return azureippool, nil
+	return nil
 }
 
 func (s *AzureIPPoolScope) UpdateIPPool(ctx context.Context, azureippool *infrav1.AzureIPPool) error {
@@ -177,11 +177,11 @@ func (s *AzureIPPoolScope) UpdateIPPool(ctx context.Context, azureippool *infrav
 	if err := s.Client.Update(ctx, azureippool); err != nil {
 		return errors.Wrapf(err, "Failed to update Azure IP pool")
 	}
-	log.Info(fmt.Sprintf("Successfully updated the IP pool %s", azureippool.Spec.Name))
+	log.Info(fmt.Sprintf("Successfully updated the IP pool CR %s", azureippool.Name))
 	return nil
 }
 
-func (s *AzureIPPoolScope) AddToFreeIPPool(machineScope *MachineScope, azureippool *infrav1.AzureIPPool , freeIP string) (*infrav1.AzureIPPool, error) {
+func (s *AzureIPPoolScope) AddToFreeIPPool(machineScope *MachineScope, ippool *infrav1.IPPool , freeIP string) error {
 
 	log := klogr.New()
 	log.Info(fmt.Sprintf("Getting IP %s from allocated IP pool",freeIP))
@@ -191,16 +191,16 @@ func (s *AzureIPPoolScope) AddToFreeIPPool(machineScope *MachineScope, azureippo
 		return errors.Wrapf(err, "Failed to get ip pool")
 	}*/
 
-	if azureippool.Spec.IPPool == nil {
+	if ippool.FreeIPs == nil {
 		log.Info(fmt.Sprintf("IPPool before is nil"))
 		freeIPs := []string{freeIP}
-		azureippool.Spec.IPPool = freeIPs
+		ippool.FreeIPs = freeIPs
 	}else{
-		log.Info(fmt.Sprintf("IPPool before is %v", azureippool.Spec.IPPool))
-		azureippool.Spec.IPPool = append(azureippool.Spec.IPPool, freeIP)
+		log.Info(fmt.Sprintf("IPPool before is %v", ippool.FreeIPs))
+		ippool.FreeIPs = append(ippool.FreeIPs, freeIP)
 	}
 
-	log.Info(fmt.Sprintf("Free IPPool after is %v", azureippool.Spec.IPPool))
+	log.Info(fmt.Sprintf("Free IPPool after is %v", ippool.FreeIPs))
 	
 	/*//updating the AzureIPPool CRD
 	if err := s.Client.Update(ctx, azureippool); err != nil {
@@ -209,10 +209,10 @@ func (s *AzureIPPoolScope) AddToFreeIPPool(machineScope *MachineScope, azureippo
 
 	log.Info(fmt.Sprintf("After updating IPPool CRD for machine with name %s", machineScope.Name()))*/
 
-	return azureippool, nil
+	return nil
 }
 
-func (s *AzureIPPoolScope) RemoveFromAllocatedIPPool(machineScope *MachineScope, azureippool *infrav1.AzureIPPool , freeIP string) (*infrav1.AzureIPPool, error) {
+func (s *AzureIPPoolScope) RemoveFromAllocatedIPPool(machineScope *MachineScope, ippool *infrav1.IPPool , freeIP string) error {
 
 	log := klogr.New()
 	log.Info(fmt.Sprintf("Getting IP %s from allocated IP pool",freeIP))
@@ -222,20 +222,20 @@ func (s *AzureIPPoolScope) RemoveFromAllocatedIPPool(machineScope *MachineScope,
 		return errors.Wrapf(err, "Failed to get ip pool")
 	}*/
 
-	log.Info(fmt.Sprintf("Allocated IPPool before %v", azureippool.Spec.AllocatedIPs))
+	log.Info(fmt.Sprintf("Allocated IPPool before %v", ippool.AllocatedIPs))
 	foundIP := false
-	for index, ip := range azureippool.Spec.AllocatedIPs {
+	for index, ip := range ippool.AllocatedIPs {
 		if(ip == freeIP){
 			foundIP = true
-			azureippool.Spec.AllocatedIPs = append(azureippool.Spec.AllocatedIPs[0:index], azureippool.Spec.AllocatedIPs[index+1:]...)
+			ippool.AllocatedIPs = append(ippool.AllocatedIPs[0:index], ippool.AllocatedIPs[index+1:]...)
 			break;
 		}
 	}
 	if foundIP == false {
-		return nil, errors.New("Failed to get IP in the allocated IPs pool")
+		return errors.New("Failed to get IP in the allocated IPs pool")
 	}
 
-	log.Info(fmt.Sprintf("Allocated IPPool after %v", azureippool.Spec.AllocatedIPs))
+	log.Info(fmt.Sprintf("Allocated IPPool after %v", ippool.AllocatedIPs))
 
 	/*//updating the AzureIPPool CRD
 	if err := s.Client.Update(ctx, azureippool); err != nil {
@@ -244,6 +244,6 @@ func (s *AzureIPPoolScope) RemoveFromAllocatedIPPool(machineScope *MachineScope,
 
 	//log.Info(fmt.Sprintf("After updating IPPool CRD for machine with name %s", machineScope.Name()))
 
-	return azureippool, nil
+	return nil
 }
 

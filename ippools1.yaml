@@ -6,8 +6,9 @@ spec:
   name: ase-ip-pool
   ipPool:
   - "10.57.48.170"
-  - "10.57.48.167"
   - "10.57.48.171"
   - "10.57.48.172"
+  - "10.57.48.168"
+  - "10.57.48.169"
   vnetName: "asevnet"
   subnetName: "asevnetsubnet"

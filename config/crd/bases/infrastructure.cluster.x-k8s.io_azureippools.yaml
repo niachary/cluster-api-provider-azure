@@ -36,26 +36,29 @@ spec:
           spec:
             description: AzureIPPoolSpec defines the desired state of AzureIPPool
             properties:
-              allocatedIps:
+              ipPools:
                 items:
-                  type: string
+                  properties:
+                    allocatedIPs:
+                      items:
+                        type: string
+                      type: array
+                    freeIPs:
+                      items:
+                        type: string
+                      type: array
+                    name:
+                      type: string
+                    subnetName:
+                      type: string
+                    vnetName:
+                      type: string
+                  required:
+                  - name
+                  - subnetName
+                  - vnetName
+                  type: object
                 type: array
-              ipPool:
-                items:
-                  type: string
-                type: array
-              name:
-                description: Foo is an example field of AzureIPPool. Edit AzureIPPool_types.go
-                  to remove/update
-                type: string
-              subnetName:
-                type: string
-              vnetName:
-                type: string
-            required:
-            - name
-            - subnetName
-            - vnetName
             type: object
           status:
             description: AzureIPPoolStatus defines the observed state of AzureIPPool

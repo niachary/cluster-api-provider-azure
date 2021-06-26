@@ -386,18 +386,6 @@ type SubnetSpec struct {
 	RouteTable RouteTable `json:"routeTable,omitempty"`
 }
 
-type IPPool struct {
-	Name string `json:"name"`
-
-	IPPool []string `json:"ipPool,omitempty"`
-
-	AllocatedIPs []string `json:"allocatedIps,omitempty"`
-
-	VnetName string `json:"vnetName"`
-
-	SubnetName string `json:"subnetName"`
-}
-
 // GetControlPlaneSubnet returns the cluster control plane subnet.
 func (n *NetworkSpec) GetControlPlaneSubnet() *SubnetSpec {
 	for _, sn := range n.Subnets {

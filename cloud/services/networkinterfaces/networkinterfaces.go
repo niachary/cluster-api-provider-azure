@@ -1,12 +1,9 @@
 /*
 Copyright 2019 The Kubernetes Authors.
-
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
-
     http://www.apache.org/licenses/LICENSE-2.0
-
 Unless required by applicable law or agreed to in writing, software
 distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,21 +28,7 @@ import (
 // Reconcile gets/creates/updates a network interface.
 func (s *Service) Reconcile(ctx context.Context) error {
 	log := klogr.New()
-
-	machineName := s.Scope.Name()
-	nicName := azure.GenerateNICName(machineName)
-	//check if network interface for this machine exists
-	_, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nicName)
-	switch {
-	case err != nil && !azure.ResourceNotFound(err):
-		return errors.Wrapf(err, "failed to fetch network interface %s", nicName)
-	case err == nil:
-		// network interface already exists for machine, do nothing
-		return nil
-	}
-	nics  := s.Scope.NICSpecs()
-    // if nic is not created for a machine
-	for _, nicSpec := range(nics) {
+	for _, nicSpec := range s.Scope.NICSpecs() {
 
 		_, err := s.Client.Get(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
 		switch {
@@ -115,7 +98,6 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				if err != nil {
 					return errors.Wrapf(err, "failed to get find vm sku %s in compute api", nicSpec.VMSize)
 				}
-
 				accelNet := sku.HasCapability(resourceskus.AcceleratedNetworking)
 				nicSpec.AcceleratedNetworking = &accelNet
 			}*/
@@ -147,8 +129,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 
 // Delete deletes the network interface with the provided name.
 func (s *Service) Delete(ctx context.Context) error {
-	nics := s.Scope.NICSpecs()
-	for _, nicSpec := range nics {
+	for _, nicSpec := range s.Scope.NICSpecs() {
 		s.Scope.V(2).Info("deleting network interface %s", "network interface", nicSpec.Name)
 		err := s.Client.Delete(ctx, s.Scope.ResourceGroup(), nicSpec.Name)
 		if err != nil && !azure.ResourceNotFound(err) {
