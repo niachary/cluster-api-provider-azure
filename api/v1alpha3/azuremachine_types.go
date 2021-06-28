@@ -126,6 +126,8 @@ type NetworkInterface struct{
 	IsPrimary bool `json:"isPrimary,omitempty"`
 	//static IP address
 	StaticIPAddress string `json:"staticIPAddress,omitempty"`
+	//Accelerated Networking
+	AcceleratedNetworking bool `json:"acceleratedNetworking,omitempty"`
 }
 
 // AzureMachineStatus defines the observed state of AzureMachine

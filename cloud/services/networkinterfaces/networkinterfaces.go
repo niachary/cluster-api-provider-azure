@@ -114,7 +114,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 								InterfaceIPConfigurationPropertiesFormat: nicConfig,
 							},
 						},
-						//EnableAcceleratedNetworking: nicSpec.AcceleratedNetworking,
+						EnableAcceleratedNetworking: nicSpec.AcceleratedNetworking,
 					},
 				})
 

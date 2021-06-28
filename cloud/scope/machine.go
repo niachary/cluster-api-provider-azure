@@ -146,7 +146,7 @@ func (m *MachineScope) InboundNatSpecs() []azure.InboundNatSpec {
 func (m *MachineScope) NICSpecs() ([]azure.NICSpec) {
 	log := klogr.New()
 	specs := []azure.NICSpec{}
-	
+
 	for _, networkInterface := range m.AzureMachine.Spec.NetworkInterfaces {
 		log.Info(fmt.Sprintf("Creating spec for Network Interface: %s",networkInterface.Name))
 		spec := azure.NICSpec{
@@ -156,7 +156,7 @@ func (m *MachineScope) NICSpecs() ([]azure.NICSpec) {
 			VNetResourceGroup:     networkInterface.VnetResourceGroup,
 			SubnetName:            networkInterface.SubnetName,
 			VMSize:                m.AzureMachine.Spec.VMSize,
-			AcceleratedNetworking: m.AzureMachine.Spec.AcceleratedNetworking,
+			AcceleratedNetworking: &networkInterface.AcceleratedNetworking,
 			StaticIPAddress: 	   networkInterface.StaticIPAddress,
 		}
 		specs = append(specs, spec)
