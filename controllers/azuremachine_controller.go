@@ -196,10 +196,12 @@ func (r *AzureMachineReconciler) Reconcile(req ctrl.Request) (_ ctrl.Result, ret
     logger = logger.WithValues("AzureIPPool", azureIPPool.Name)
     
     //Create AzureIPPoolScope
+	lock := sync.Mutex{}
     azureIPPoolScope, err := scope.NewIPPoolScope(scope.IPPoolScopeParams{
         Client:       r.Client,
         Logger:       logger,
         AzureIPPool: azureIPPool,
+		Lock: lock,
     })
     if err != nil {
         r.Recorder.Eventf(azureIPPool, corev1.EventTypeWarning, "Error creating the ip pool scope", err.Error())

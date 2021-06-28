@@ -26,6 +26,7 @@ import (
 	"sigs.k8s.io/cluster-api/util/patch"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"fmt"
+	"sync"
 )
 
 // ClusterScopeParams defines the input parameters used to create a new Scope.
@@ -33,6 +34,7 @@ type IPPoolScopeParams struct {
 	Client       client.Client
 	Logger       logr.Logger
 	AzureIPPool *infrav1.AzureIPPool
+	Lock  		sync.Mutex
 }
 
 // NewClusterScope creates a new Scope from the supplied parameters.
@@ -58,6 +60,7 @@ func NewIPPoolScope(params IPPoolScopeParams) (*AzureIPPoolScope, error) {
 		Client:       params.Client,
 		AzureIPPool: params.AzureIPPool,
 		patchHelper:  helper,
+		Lock: params.Lock,
 	}, nil
 }
 
@@ -66,7 +69,7 @@ type AzureIPPoolScope struct {
 	logr.Logger
 	Client      client.Client
 	patchHelper *patch.Helper
-
+	Lock sync.Mutex
 	AzureIPPool *infrav1.AzureIPPool
 }
 
@@ -129,6 +132,9 @@ func (s *AzureIPPoolScope) GetFromFreeIPPool(machineScope *MachineScope, ippool 
 		if foundIP == false {
 			return "" , errors.New("Failed to retrieve IP matching the APIServerIP from the free IP pool for control plane")
 		}
+
+		//UpdateIPPool
+		//unlock
 	}
 	
 	return allocatedIP, nil
