@@ -19,7 +19,6 @@ package controllers
 import (
     "context"
     "time"
-    "sync"
 
     "github.com/go-logr/logr"
     "github.com/pkg/errors"
@@ -287,10 +286,6 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
     }
 
     log := klogr.New()
-    lock := sync.Mutex{}
-    lock.Lock()
-    // locking for one thread of a machine
-    log.Info(fmt.Sprintf("Locking for machine %s", machineScope.Name()))
     //check if this info can be stored in spec?
     log.Info(fmt.Sprintf("length of network interface is %d",len(machineScope.AzureMachine.Spec.NetworkInterfaces)))
     if (len(machineScope.AzureMachine.Spec.NetworkInterfaces) == 0){
@@ -300,8 +295,6 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
             return reconcile.Result{}, errors.Wrapf(err, "failed to retrieve Azure IP pool")
         }
     }
-    log.Info(fmt.Sprintf("Unlocking for machine %s", machineScope.Name()))
-    lock.Unlock()
     
     ams := newAzureMachineService(machineScope, clusterScope)
 

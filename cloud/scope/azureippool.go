@@ -113,21 +113,21 @@ func (s *AzureIPPoolScope) ReconcileIP(ctx context.Context, machineScope *Machin
     }()
 	
 	allocatedIP := ""
-	ippool := azureippools.Spec.IPPools[index]
+	ippool := &azureippools.Spec.IPPools[index]
 	if (machineIP == "") {
-		allocatedIP = ippool.FreeIPs[0]
-		log.Info(fmt.Sprintf("AzureIPPool before %v",ippool.FreeIPs))
-		ippool.FreeIPs = ippool.FreeIPs[1:]
-		log.Info(fmt.Sprintf("AzureIPPool after %v",ippool.FreeIPs))
+		allocatedIP = (*ippool).FreeIPs[0]
+		log.Info(fmt.Sprintf("AzureIPPool before %v", (*ippool).FreeIPs))
+		(*ippool).FreeIPs = (*ippool).FreeIPs[1:]
+		log.Info(fmt.Sprintf("AzureIPPool after %v",(*ippool).FreeIPs))
 	} else {
 		foundIP := false
-		for index, ip := range ippool.FreeIPs {
+		for index, ip := range (*ippool).FreeIPs {
 			if(ip == machineIP){
 				foundIP = true
 				allocatedIP = ip
-				log.Info(fmt.Sprintf("AzureIPPool before %v",ippool.FreeIPs))
-				ippool.FreeIPs = append(ippool.FreeIPs[0:index], ippool.FreeIPs[index+1:]...)
-				log.Info(fmt.Sprintf("AzureIPPool after %v",ippool.FreeIPs))
+				log.Info(fmt.Sprintf("AzureIPPool before %v", (*ippool).FreeIPs))
+				(*ippool).FreeIPs = append((*ippool).FreeIPs[0:index], (*ippool).FreeIPs[index+1:]...)
+				log.Info(fmt.Sprintf("AzureIPPool after %v", (*ippool).FreeIPs))
 				break;
 			}
 		}
@@ -138,16 +138,16 @@ func (s *AzureIPPoolScope) ReconcileIP(ctx context.Context, machineScope *Machin
 		log.Info(fmt.Sprintf("Adding IP %s to allocated IP pool",allocatedIP))
 	}
 
-	if ippool.AllocatedIPs == nil {
+	if (*ippool).AllocatedIPs == nil {
 		log.Info(fmt.Sprintf("AllocatedIPPool before is nil"))
 		allocatedIPs := []string{allocatedIP}
-		ippool.AllocatedIPs = allocatedIPs
+		(*ippool).AllocatedIPs = allocatedIPs
 	}else {
-		log.Info(fmt.Sprintf("AllocatedIPPool before %v", ippool.AllocatedIPs))
-		ippool.AllocatedIPs = append(ippool.AllocatedIPs, allocatedIP)
+		log.Info(fmt.Sprintf("AllocatedIPPool before %v", (*ippool).AllocatedIPs))
+		(*ippool).AllocatedIPs = append((*ippool).AllocatedIPs, allocatedIP)
 	}
 
-	log.Info(fmt.Sprintf("AllocatedIPPool after %v",ippool.AllocatedIPs))
+	log.Info(fmt.Sprintf("AllocatedIPPool after %v", (*ippool).AllocatedIPs))
 	if err := s.Client.Update(ctx, azureippools); err != nil {
 		return "", errors.Wrapf(err, "Failed to update Azure IP pool")
 	}
@@ -199,23 +199,23 @@ func (s *AzureIPPoolScope) FreeIP(ctx context.Context, machineScope *MachineScop
     }()
 
 	log.Info(fmt.Sprintf("Getting IP %s from allocated IP pool",freeIP))
-	ippool := azureippools.Spec.IPPools[index]
-	if ippool.FreeIPs == nil {
+	ippool := &azureippools.Spec.IPPools[index]
+	if (*ippool).FreeIPs == nil {
 		log.Info(fmt.Sprintf("IPPool before is nil"))
 		freeIPs := []string{freeIP}
-		ippool.FreeIPs = freeIPs
+		(*ippool).FreeIPs = freeIPs
 	}else{
-		log.Info(fmt.Sprintf("IPPool before is %v", ippool.FreeIPs))
-		ippool.FreeIPs = append(ippool.FreeIPs, freeIP)
+		log.Info(fmt.Sprintf("IPPool before is %v", (*ippool).FreeIPs))
+		(*ippool).FreeIPs = append((*ippool).FreeIPs, freeIP)
 	}
 
-	log.Info(fmt.Sprintf("Free IPPool after is %v", ippool.FreeIPs))
-	log.Info(fmt.Sprintf("Allocated IPPool before %v", ippool.AllocatedIPs))
+	log.Info(fmt.Sprintf("Free IPPool after is %v", (*ippool).FreeIPs))
+	log.Info(fmt.Sprintf("Allocated IPPool before %v", (*ippool).AllocatedIPs))
 	foundIP := false
-	for index, ip := range ippool.AllocatedIPs {
+	for index, ip := range (*ippool).AllocatedIPs {
 		if(ip == freeIP){
 			foundIP = true
-			ippool.AllocatedIPs = append(ippool.AllocatedIPs[0:index], ippool.AllocatedIPs[index+1:]...)
+			(*ippool).AllocatedIPs = append((*ippool).AllocatedIPs[0:index], (*ippool).AllocatedIPs[index+1:]...)
 			break;
 		}
 	}
@@ -223,7 +223,7 @@ func (s *AzureIPPoolScope) FreeIP(ctx context.Context, machineScope *MachineScop
 		return errors.New("Failed to get IP in the allocated IPs pool")
 	}
 
-	log.Info(fmt.Sprintf("Allocated IPPool after %v", ippool.AllocatedIPs))
+	log.Info(fmt.Sprintf("Allocated IPPool after %v", (*ippool).AllocatedIPs))
 	if err := s.Client.Update(ctx, azureippools); err != nil {
 		return errors.Wrapf(err, "Failed to update Azure IP pool")
 	}
