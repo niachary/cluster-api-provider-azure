@@ -104,12 +104,13 @@ func (s *AzureIPPoolScope) GetIPPoolObj(ctx context.Context, namespace string, i
 	return azureippool, nil
 }
 
+/*Reconcile IP pool gets the IP from free IP pool, adds it to allocated IP pool and updates the IP pool. Machine IP is "" for worker VMs and
+equal to APIServerIP for control plane VM*/
 func (s *AzureIPPoolScope) ReconcileIPs(ctx context.Context, machineScope *MachineScope, ippoolname string, machineIP string) error {
-	log := klogr.New()
 	lock.Lock()
-	log.Info(fmt.Sprintf("Locking reconcile IP for machine %s", machineScope.Name()))
+	machineScope.Info(fmt.Sprintf("Locking reconcile IP for machine %s", machineScope.Name()))
 	defer func() {
-		log.Info(fmt.Sprintf("Unlocking reconcile IP for machine %s", machineScope.Name()))
+		machineScope.Info(fmt.Sprintf("Unlocking reconcile IP for machine %s", machineScope.Name()))
      lock.Unlock()   
     }()
 	
@@ -118,17 +119,16 @@ func (s *AzureIPPoolScope) ReconcileIPs(ctx context.Context, machineScope *Machi
         return errors.Wrapf(err, "Failed to retrieve Azure IP pool")
     }
 
-	for index, _ := range(azureippools.Spec.IPPools){
+	for index, _ := range(azureippools.Spec.IPPools) {
 		ippool := &azureippools.Spec.IPPools[index]
         networkInterface := BuildNetworkInterfaceSpec(machineScope,*ippool,(*ippool).Name)
         if ippool.Name == "mgmt-nic-ip-pool" {
-			log.Info(fmt.Sprintf("Free IPPool before %v", (*ippool).FreeIPs))
+			machineScope.Info(fmt.Sprintf("Free IPPool before %v", (*ippool).FreeIPs))
 			allocatedIP := ""
-			
+			// machine IP is "" for worker VM and equal to APIServerIP for control plane VM
 			if (machineIP == "") {
 				allocatedIP = (*ippool).FreeIPs[0]	
 				(*ippool).FreeIPs = (*ippool).FreeIPs[1:]
-				
 			} else {
 				foundIP := false
 				for i, ip := range (*ippool).FreeIPs {
@@ -144,23 +144,22 @@ func (s *AzureIPPoolScope) ReconcileIPs(ctx context.Context, machineScope *Machi
 				if foundIP == false {
 					return errors.New("Failed to retrieve IP matching the APIServerIP from the free IP pool for control plane")
 				}
-				log.Info(fmt.Sprintf("Adding IP %s to allocated IP pool",allocatedIP))
 			}
+			machineScope.Info(fmt.Sprintf("Free IPPool after %v",(*ippool).FreeIPs))
 
-			log.Info(fmt.Sprintf("Free IPPool after %v",(*ippool).FreeIPs))
-			log.Info(fmt.Sprintf("Allocated IPPool before %v", (*ippool).AllocatedIPs))
+			machineScope.Info(fmt.Sprintf("Allocated IPPool before %v", (*ippool).AllocatedIPs))
 			if (*ippool).AllocatedIPs == nil {
 				allocatedIPs := []string{allocatedIP}
 				(*ippool).AllocatedIPs = allocatedIPs
 			}else {
 				(*ippool).AllocatedIPs = append((*ippool).AllocatedIPs, allocatedIP)
 			}
-			log.Info(fmt.Sprintf("Allocated IPPool after %v", (*ippool).AllocatedIPs))
+			machineScope.Info(fmt.Sprintf("Allocated IPPool after %v", (*ippool).AllocatedIPs))
+
 			if err := s.Client.Update(ctx, azureippools); err != nil {
 				return errors.Wrapf(err, "Failed to update Azure IP pool")
 			}
-			log.Info(fmt.Sprintf("Successfully updated the IP pool CR %s", azureippools.Name))
-
+			machineScope.Info(fmt.Sprintf("Successfully updated AzureIPPool %s", azureippools.Name))
 			networkInterface.StaticIPAddress = allocatedIP
         }
         machineScope.AzureMachine.Spec.NetworkInterfaces = append(machineScope.AzureMachine.Spec.NetworkInterfaces, networkInterface)
@@ -168,50 +167,15 @@ func (s *AzureIPPoolScope) ReconcileIPs(ctx context.Context, machineScope *Machi
 	return nil
 }
 
-
-/*func (s *AzureIPPoolScope) AddToAllocatedIPPool(machineScope *MachineScope, ippool *infrav1.IPPool, allocatedIP string) error {
-	log := klogr.New()
-	log.Info(fmt.Sprintf("Adding IP %s to allocated IP pool",allocatedIP))
-
-	
-
-	if ippool.AllocatedIPs == nil {
-		log.Info(fmt.Sprintf("AllocatedIPPool before is nil"))
-		allocatedIPs := []string{allocatedIP}
-		ippool.AllocatedIPs = allocatedIPs
-	}else {
-		log.Info(fmt.Sprintf("AllocatedIPPool before %v", ippool.AllocatedIPs))
-		ippool.AllocatedIPs = append(ippool.AllocatedIPs, allocatedIP)
-	}
-
-	log.Info(fmt.Sprintf("AllocatedIPPool after %v",ippool.AllocatedIPs))
-	
-	
-
-	return nil
-}*/
-
-/*func (s *AzureIPPoolScope) UpdateIPPool(ctx context.Context, azureippool *infrav1.AzureIPPool) error {
-	log := klogr.New()
-	//updating the AzureIPPool CRD
-	if err := s.Client.Update(ctx, azureippool); err != nil {
-		return errors.Wrapf(err, "Failed to update Azure IP pool")
-	}
-	log.Info(fmt.Sprintf("Successfully updated the IP pool CR %s", azureippool.Name))
-	return nil
-}*/
-
 func (s *AzureIPPoolScope) FreeIPs(ctx context.Context, machineScope *MachineScope, ippoolname string) error {
-	log := klogr.New()
 	lock.Lock()
-	log.Info(fmt.Sprintf("Locking Free IP for machine %s", machineScope.Name()))
+	machineScope.Info(fmt.Sprintf("Locking FreeIPs for machine %s", machineScope.Name()))
 	defer func() {
-		log.Info(fmt.Sprintf("Unlocking Free IP for machine %s", machineScope.Name()))
+		machineScope.Info(fmt.Sprintf("Unlocking FreeIPs for machine %s", machineScope.Name()))
     	lock.Unlock()   
     }()
 
 	azureippools, err := s.GetIPPoolObj(ctx, "default","ase-ip-pool")
-    
     if err!=nil {
         return errors.Wrapf(err, "Failed to retrieve Azure IP pool")
     }
@@ -219,7 +183,6 @@ func (s *AzureIPPoolScope) FreeIPs(ctx context.Context, machineScope *MachineSco
 	for index, _ := range(azureippools.Spec.IPPools) {
 		ippool := &azureippools.Spec.IPPools[index]
 		if((*ippool).Name == "mgmt-nic-ip-pool"){        
-			log.Info("Inside free IPs for azuremachine %s",machineScope.Name())
 			primaryNetworkInterface, err := GetPrimaryNetworkInterface(machineScope.AzureMachine.Spec.NetworkInterfaces)
 			if err!= nil {
 				return errors.Wrapf(err, "Error getting primary nic for the machine %s",machineScope.Name())
@@ -227,8 +190,8 @@ func (s *AzureIPPoolScope) FreeIPs(ctx context.Context, machineScope *MachineSco
 			freeIP := primaryNetworkInterface.StaticIPAddress
 
 			//Remove from allocated IP pool
-			log.Info(fmt.Sprintf("Getting IP %s from allocated IP pool",freeIP))
-			log.Info(fmt.Sprintf("Allocated IPPool before %v", (*ippool).AllocatedIPs))
+			machineScope.Info(fmt.Sprintf("Getting IP %s from allocated IP pool",freeIP))
+			machineScope.Info(fmt.Sprintf("Allocated IPPool before %v", (*ippool).AllocatedIPs))
 			foundIP := false
 			for i, ip := range (*ippool).AllocatedIPs {
 				if(ip == freeIP){
@@ -240,9 +203,9 @@ func (s *AzureIPPoolScope) FreeIPs(ctx context.Context, machineScope *MachineSco
 			if foundIP == false {
 				return errors.New("Failed to get IP in the allocated IPs pool")
 			}
-			log.Info(fmt.Sprintf("Allocated IPPool after %v", (*ippool).AllocatedIPs))
+			machineScope.Info(fmt.Sprintf("Allocated IPPool after %v", (*ippool).AllocatedIPs))
 			
-			log.Info(fmt.Sprintf("Free IPPool before is %v", (*ippool).FreeIPs))
+			machineScope.Info(fmt.Sprintf("Free IPPool before is %v", (*ippool).FreeIPs))
 			//Adding to free IP pool
 			if (*ippool).FreeIPs == nil {
 				freeIPs := []string{freeIP}
@@ -250,45 +213,17 @@ func (s *AzureIPPoolScope) FreeIPs(ctx context.Context, machineScope *MachineSco
 			}else{
 				(*ippool).FreeIPs = append((*ippool).FreeIPs, freeIP)
 			}
-			log.Info(fmt.Sprintf("Free IPPool after is %v", (*ippool).FreeIPs))
-			
+			machineScope.Info(fmt.Sprintf("Free IPPool after is %v", (*ippool).FreeIPs))
 
 			if err := s.Client.Update(ctx, azureippools); err != nil {
 				return errors.Wrapf(err, "Failed to update Azure IP pool")
 			}
-			log.Info(fmt.Sprintf("Successfully updated the IP pool CR %s", azureippools.Name))
+			machineScope.Info(fmt.Sprintf("Successfully updated AzureIPPool %s", azureippools.Name))
 		}
 	}
 
 	return nil
 }
-
-/*func (s *AzureIPPoolScope) RemoveFromAllocatedIPPool(machineScope *MachineScope, ippool *infrav1.IPPool , freeIP string) error {
-
-	log := klogr.New()
-	log.Info(fmt.Sprintf("Getting IP %s from allocated IP pool",freeIP))
-
-	
-
-	log.Info(fmt.Sprintf("Allocated IPPool before %v", ippool.AllocatedIPs))
-	foundIP := false
-	for index, ip := range ippool.AllocatedIPs {
-		if(ip == freeIP){
-			foundIP = true
-			ippool.AllocatedIPs = append(ippool.AllocatedIPs[0:index], ippool.AllocatedIPs[index+1:]...)
-			break;
-		}
-	}
-	if foundIP == false {
-		return errors.New("Failed to get IP in the allocated IPs pool")
-	}
-
-	log.Info(fmt.Sprintf("Allocated IPPool after %v", ippool.AllocatedIPs))
-
-	
-
-	return nil
-}*/
 
 func BuildNetworkInterfaceSpec(machineScope *MachineScope,ippool infrav1.IPPool, name string) infrav1.NetworkInterface {
     networkInterface := infrav1.NetworkInterface{}
