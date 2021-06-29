@@ -409,7 +409,6 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
     machineScope.Info("Handling deleted AzureMachine")
     
     log := klogr.New()
-    lock := sync.Mutex{}
 
     if err := newAzureMachineService(machineScope, clusterScope).Delete(ctx); err != nil {
         r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error deleting AzureCluster", errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName()).Error())
@@ -418,7 +417,6 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 
     log.Info(fmt.Sprintf("After deleting azure machine %s",machineScope.Name()))
 
-    lock.Lock()
     log.Info(fmt.Sprintf("Locking for machine %s", machineScope.Name()))
     log.Info(fmt.Sprintf("Inside lock of reconcileDelete for machine %s", machineScope.Name()))
     azureippools, err := azureIPPoolScope.GetIPPoolObj(ctx, "default","ase-ip-pool")
@@ -457,7 +455,6 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
         }
     }()
     log.Info(fmt.Sprintf("Unlocking for machine %s", machineScope.Name()))
-    lock.Unlock()
 
     return reconcile.Result{}, nil
 }
