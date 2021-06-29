@@ -101,7 +101,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 				accelNet := sku.HasCapability(resourceskus.AcceleratedNetworking)
 				nicSpec.AcceleratedNetworking = &accelNet
 			}*/
-
+			log.Info(fmt.Sprintf("Nic name: %s, IP Address: %s, EnableAcceleratedNetworking: %s", nicSpec.Name, nicSpec.StaticIPAddress, nicSpec.AcceleratedNetworking))
 			err = s.Client.CreateOrUpdate(ctx,
 				s.Scope.ResourceGroup(),
 				nicSpec.Name,
@@ -114,7 +114,7 @@ func (s *Service) Reconcile(ctx context.Context) error {
 								InterfaceIPConfigurationPropertiesFormat: nicConfig,
 							},
 						},
-						EnableAcceleratedNetworking: nicSpec.AcceleratedNetworking,
+						//EnableAcceleratedNetworking: nicSpec.AcceleratedNetworking,
 					},
 				})
 
