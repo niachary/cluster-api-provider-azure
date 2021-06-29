@@ -38,7 +38,6 @@ import (
     "sigs.k8s.io/controller-runtime/pkg/handler"
     "sigs.k8s.io/controller-runtime/pkg/reconcile"
     "sigs.k8s.io/controller-runtime/pkg/source"
-    azure "github.com/niachary/cluster-api-provider-azure/cloud"
 
     infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
     "github.com/niachary/cluster-api-provider-azure/cloud/scope"
@@ -356,51 +355,13 @@ func (r *AzureMachineReconciler) reconcileAzureMachineIPAddress(machineScope *sc
     }
     log.Info(fmt.Sprintf("machineIP is %s", machineIP))
 
-    azureippools, err := azureIPPoolScope.GetIPPoolObj(ctx, "default","ase-ip-pool")
+	err := azureIPPoolScope.ReconcileIPs(ctx, machineScope, "ase-ip-pools", machineIP)
     if err!=nil {
-        r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IPPool", errors.Wrapf(err, "error reconciling IPPool for machine %s", machineScope.Name()).Error())
-        return errors.Wrapf(err, "Failed to retrieve Azure IP pool")
+        r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IPs", errors.Wrapf(err, "error reconciling IPs for machine %s", machineScope.Name()).Error())
+        return errors.Wrapf(err, fmt.Sprintf("Failed to reconcile IPs for machine %s",machineScope.Name()))
     }
-    
-    //Build network interface spec for the machine
-    for index, ippool := range(azureippools.Spec.IPPools){
-        networkInterface := BuildNetworkInterfaceSpec(machineScope,ippool,ippool.Name)
-        if ippool.Name == "mgmt-nic-ip-pool" {
+	log.Info(fmt.Sprintf("Network Interface for machine %s is  %v", machineScope.Name(), machineScope.AzureMachine.Spec.NetworkInterfaces))
 
-            /*allocatedIP, err := azureIPPoolScope.GetFromFreeIPPool(machineScope, azureippools, index, machineIP)
-            if err!=nil {
-                r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IPPool", errors.Wrapf(err, "error reconciling IPPool for machine %s", machineScope.Name()).Error())
-                return errors.Wrapf(err, "Failed to get free IP from Azure IP pool")
-            }
-			azureippools.Spec.IPPools[index] = ippool
-            log.Info(fmt.Sprintf("AzureIPPool is  %v", azureippools.Spec.IPPools))
-            log.Info(fmt.Sprintf("Allocated IP %s", allocatedIP))
-			*/
-            //assign the free IP to networkInterface spec
-
-            /*err = azureIPPoolScope.AddToAllocatedIPPool(machineScope, &ippool, allocatedIP)
-            if err!=nil {
-                r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IPPool", errors.Wrapf(err, "error reconciling IPPool for machine %s", machineScope.Name()).Error())
-                return errors.Wrapf(err, "Failed to add IP to Allocated IP pool")
-            }
-			azureippools.Spec.IPPools[index] = ippool
-            log.Info(fmt.Sprintf("AzureIPPool is  %v", azureippools.Spec.IPPools))*/
-
-            /*err = azureIPPoolScope.UpdateIPPool(ctx, azureippools)
-            if err!=nil {
-                r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error updating IPPool", errors.Wrapf(err, "error updating IPPool for machine %s", machineScope.Name()).Error())
-                return errors.Wrapf(err, "Failed to update IP pool")
-            }*/
-			allocatedIP, err := azureIPPoolScope.ReconcileIP(ctx, machineScope, azureippools, index, machineIP)
-            if err!=nil {
-                r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IP", errors.Wrapf(err, "error reconciling IP for machine %s", machineScope.Name()).Error())
-                return errors.Wrapf(err, fmt.Sprintf("Failed to reconcile IP for machine %s",machineScope.Name()))
-            }
-			networkInterface.StaticIPAddress = allocatedIP
-        }
-        machineScope.AzureMachine.Spec.NetworkInterfaces = append(machineScope.AzureMachine.Spec.NetworkInterfaces, networkInterface)
-        log.Info(fmt.Sprintf("Network Interface for machine %s is  %v", machineScope.Name(), machineScope.AzureMachine.Spec.NetworkInterfaces))
-    } 
     return nil
 }
 
@@ -419,33 +380,17 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
 
     log.Info(fmt.Sprintf("Locking for machine %s", machineScope.Name()))
     log.Info(fmt.Sprintf("Inside lock of reconcileDelete for machine %s", machineScope.Name()))
-    azureippools, err := azureIPPoolScope.GetIPPoolObj(ctx, "default","ase-ip-pool")
     
-    if err!=nil {
-        r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IPPool", errors.Wrapf(err, "error reconciling IPPool for machine %s", machineScope.Name()).Error())
-        return reconcile.Result{}, errors.Wrapf(err, "Failed to retrieve Azure IP pool")
-    }
 
     if len(machineScope.AzureMachine.Spec.NetworkInterfaces) > 0 {
-		for index, ippool := range(azureippools.Spec.IPPools) {
-			if(ippool.Name == "mgmt-nic-ip-pool"){        
-				log.Info("Inside free IPs for azuremachine %s",machineScope.Name())
-				primaryNetworkInterface, err := GetPrimaryNetworkInterface(machineScope.AzureMachine.Spec.NetworkInterfaces)
-				if err!= nil {
-					r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error getting Primary nic for the machine", errors.Wrapf(err, "Error getting primary nic for the machine %s", machineScope.Name()).Error())
-					return reconcile.Result{}, errors.Wrapf(err, "Error getting primary nic for the machine %s",machineScope.Name())
-				}
-				freeIP := primaryNetworkInterface.StaticIPAddress
-
-				err = azureIPPoolScope.FreeIP(ctx, machineScope, azureippools, index, freeIP)
-				if err!=nil {
-					r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error freeing IP", errors.Wrapf(err, "error freeing IP for machine %s", machineScope.Name()).Error())
-					return reconcile.Result{}, errors.Wrapf(err, fmt.Sprintf("Error freeing IP for machine %s", machineScope.Name()))
-				}
-			}
+		err := azureIPPoolScope.FreeIPs(ctx, machineScope, "ase-ip-pool")
+		if err!=nil {
+			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error freeing IPs", errors.Wrapf(err, "error freeing IPs for machine %s", machineScope.Name()).Error())
+			return reconcile.Result{}, errors.Wrapf(err, fmt.Sprintf("Error freeing IPs for machine %s", machineScope.Name()))
 		}
 		log.Info(fmt.Sprintf("Assigning network interfaces to nil for machine %s", machineScope.Name()))
 		machineScope.AzureMachine.Spec.NetworkInterfaces = []infrav1.NetworkInterface{}
+
 	}
 
     defer func() {
@@ -454,32 +399,9 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
             controllerutil.RemoveFinalizer(machineScope.AzureMachine, infrav1.MachineFinalizer)
         }
     }()
-    log.Info(fmt.Sprintf("Unlocking for machine %s", machineScope.Name()))
 
     return reconcile.Result{}, nil
 }
 
-func BuildNetworkInterfaceSpec(machineScope *scope.MachineScope,ippool infrav1.IPPool, name string) infrav1.NetworkInterface {
-    networkInterface := infrav1.NetworkInterface{}
-    networkInterface.Name = azure.GenerateNICName(machineScope.Name())
-    networkInterface.VnetName = ippool.VnetName
-    networkInterface.SubnetName = ippool.SubnetName
-    networkInterface.VnetResourceGroup = "aserg"
-    if name == "mgmt-nic-ip-pool" {
-        networkInterface.IsPrimary = true
-    } else {
-        networkInterface.StaticIPAddress = ""
-		networkInterface.AcceleratedNetworking = true
-    }
-    return networkInterface
-}
 
-func GetPrimaryNetworkInterface(nics []infrav1.NetworkInterface) (infrav1.NetworkInterface, error) {
-    nic := infrav1.NetworkInterface{}
-	for _,nic := range(nics) {
-        if nic.IsPrimary == true {
-            return nic, nil
-        }
-    }
-    return nic, errors.New("Unable to find primary nic for the machine")
-}
+
