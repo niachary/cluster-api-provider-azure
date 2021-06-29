@@ -355,7 +355,7 @@ func (r *AzureMachineReconciler) reconcileAzureMachineIPAddress(machineScope *sc
     }
     log.Info(fmt.Sprintf("machineIP is %s", machineIP))
 
-	err := azureIPPoolScope.ReconcileIPs(ctx, machineScope, "ase-ip-pools", machineIP)
+	err := azureIPPoolScope.ReconcileIPs(ctx, machineScope, "ase-ip-pool", machineIP)
     if err!=nil {
         r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IPs", errors.Wrapf(err, "error reconciling IPs for machine %s", machineScope.Name()).Error())
         return errors.Wrapf(err, fmt.Sprintf("Failed to reconcile IPs for machine %s",machineScope.Name()))
