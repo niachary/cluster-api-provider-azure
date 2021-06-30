@@ -368,15 +368,11 @@ func (r *AzureMachineReconciler) reconcileDelete(ctx context.Context, machineSco
         return reconcile.Result{}, errors.Wrapf(err, "error deleting AzureCluster %s/%s", clusterScope.Namespace(), clusterScope.ClusterName())
     }
 
-    if len(machineScope.AzureMachine.Spec.NetworkInterfaces) > 0 {
-		err := azureIPPoolScope.FreeIPs(ctx, machineScope, "ase-ip-pool")
-		if err!=nil {
-			r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error freeing IPs", errors.Wrapf(err, "error freeing IPs for machine %s", machineScope.Name()).Error())
-			return reconcile.Result{}, errors.Wrapf(err, fmt.Sprintf("Error freeing IPs for machine %s", machineScope.Name()))
-		}
-		machineScope.Info(fmt.Sprintf("Assigning network interfaces to nil"))
-		machineScope.AzureMachine.Spec.NetworkInterfaces = []infrav1.NetworkInterface{}
-	}
+	err := azureIPPoolScope.FreeIPs(ctx, machineScope, "ase-ip-pool")
+	if err!=nil {
+		r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error freeing IPs", errors.Wrapf(err, "error freeing IPs for machine %s", machineScope.Name()).Error())
+		return reconcile.Result{}, errors.Wrapf(err, fmt.Sprintf("Error freeing IPs for machine %s", machineScope.Name()))
+	}	
 
     defer func() {
         if reterr == nil {
