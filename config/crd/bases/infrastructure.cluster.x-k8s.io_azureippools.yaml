@@ -37,6 +37,8 @@ spec:
             description: AzureIPPoolSpec defines the desired state of AzureIPPool
             properties:
               ipPools:
+                description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                  Important: Run "make" to regenerate code after modifying this file'
                 items:
                   properties:
                     allocatedIPs:

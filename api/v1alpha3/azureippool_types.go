@@ -44,7 +44,6 @@ type AzureIPPoolStatus struct {
 }
 
 type IPPool struct {
-
 	Name string `json:"name"`
 
 	FreeIPs []string `json:"freeIPs,omitempty"`

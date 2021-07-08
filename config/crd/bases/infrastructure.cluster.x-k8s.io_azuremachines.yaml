@@ -404,6 +404,9 @@ spec:
                   description: NetworkInterfaces allows user to add multiple nics
                     to the VMs
                   properties:
+                    acceleratedNetworking:
+                      description: Accelerated Networking
+                      type: boolean
                     isPrimary:
                       description: Flag for Primary NIC
                       type: boolean
