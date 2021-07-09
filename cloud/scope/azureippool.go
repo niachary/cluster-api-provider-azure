@@ -164,11 +164,11 @@ func (s *AzureIPPoolScope) ReconcileIPs(ctx context.Context, machineScope *Machi
 			networkInterface.StaticIPAddress = allocatedIP
         }
         machineScope.AzureMachine.Status.NetworkInterfaces = append(machineScope.AzureMachine.Status.NetworkInterfaces, networkInterface)
-		//sleep before updating the status - or retry till its successful?
-		time.Sleep(20 * time.Second)
-		if err := s.Client.Status().Update(ctx, machineScope.AzureMachine); err != nil {
-			return errors.Wrapf(err, "Failed to update Azure Machine")
-		}
+	}
+	//sleep before updating the status - or retry till its successful?
+	time.Sleep(20 * time.Second)
+	if err := s.Client.Status().Update(ctx, machineScope.AzureMachine); err != nil {
+		return errors.Wrapf(err, "Failed to update Azure Machine")
 	}
 	return nil
 }

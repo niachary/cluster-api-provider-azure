@@ -2462,6 +2462,12 @@ spec:
             secretKeyRef:
               key: arm-endpoint
               name: capz-manager-bootstrap-credentials
+        - name: AZURE_SDK_TRACING_ENABLED
+          value: "True"
+        - name: AZURE_GO_SDK_LOG_LEVEL
+          value: debug
+        - name: AZURE_GO_SDK_LOG_FILE
+          value: /etc/log.txt
         image: niachary/cluster-api-azure-controller-amd64:dev
         imagePullPolicy: Always
         livenessProbe:
