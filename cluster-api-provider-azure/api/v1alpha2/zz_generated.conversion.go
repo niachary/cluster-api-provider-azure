@@ -577,7 +577,6 @@ func autoConvert_v1alpha3_AzureMachineSpec_To_v1alpha2_AzureMachineSpec(in *v1al
 	// WARNING: in.SpotVMOptions requires manual conversion: does not exist in peer-type
 	// WARNING: in.PrivateIPAddress requires manual conversion: does not exist in peer-type
 	// WARNING: in.ImageID requires manual conversion: does not exist in peer-type
-	// WARNING: in.NetworkInterfaces requires manual conversion: does not exist in peer-type
 	return nil
 }
 
@@ -597,6 +596,8 @@ func autoConvert_v1alpha3_AzureMachineStatus_To_v1alpha2_AzureMachineStatus(in *
 	// WARNING: in.FailureReason requires manual conversion: does not exist in peer-type
 	// WARNING: in.FailureMessage requires manual conversion: does not exist in peer-type
 	// WARNING: in.Conditions requires manual conversion: does not exist in peer-type
+	// WARNING: in.ReconciledIP requires manual conversion: does not exist in peer-type
+	// WARNING: in.NetworkInterfaces requires manual conversion: does not exist in peer-type
 	return nil
 }
 
