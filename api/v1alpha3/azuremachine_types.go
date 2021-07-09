@@ -101,7 +101,6 @@ type AzureMachineSpec struct {
 	PrivateIPAddress string `json:"privateIPAddress,omitempty"`
 	ImageID          string `json:"imageID"`
 
-	NetworkInterfaces []NetworkInterface `json:"networkInterfaces,omitempty"`
 }
 
 // SpotVMOptions defines the options relevant to running the Machine on Spot VMs
@@ -184,6 +183,12 @@ type AzureMachineStatus struct {
 	// Conditions defines current service state of the AzureMachine.
 	// +optional
 	Conditions clusterv1.Conditions `json:"conditions,omitempty"`
+
+	//Reconciled IP updates if an IP has been assigned from the pool
+	ReconciledIP bool `json:"reconciledIP,omitempty"`
+
+	//NetworkInterface struct stores the network interface details
+	NetworkInterfaces []NetworkInterface `json:"networkInterfaces,omitempty"`
 }
 
 // +kubebuilder:object:root=true

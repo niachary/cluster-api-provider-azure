@@ -162,7 +162,10 @@ func (s *AzureIPPoolScope) ReconcileIPs(ctx context.Context, machineScope *Machi
 			machineScope.Info(fmt.Sprintf("Successfully updated AzureIPPool %s", azureippools.Name))
 			networkInterface.StaticIPAddress = allocatedIP
         }
-        machineScope.AzureMachine.Spec.NetworkInterfaces = append(machineScope.AzureMachine.Spec.NetworkInterfaces, networkInterface)
+        machineScope.AzureMachine.Status.NetworkInterfaces = append(machineScope.AzureMachine.Status.NetworkInterfaces, networkInterface)
+		if err := s.Client.Status().Update(ctx, machineScope.AzureMachine); err != nil {
+			return errors.Wrapf(err, "Failed to update Azure Machine")
+		}
 	}
 	return nil
 }
@@ -180,11 +183,11 @@ func (s *AzureIPPoolScope) FreeIPs(ctx context.Context, machineScope *MachineSco
         return errors.Wrapf(err, "Failed to retrieve Azure IP pool")
     }
 
-	if len(machineScope.AzureMachine.Spec.NetworkInterfaces) > 0 {
+	if len(machineScope.AzureMachine.Status.NetworkInterfaces) > 0 {
 		for index, _ := range(azureippools.Spec.IPPools) {
 			ippool := &azureippools.Spec.IPPools[index]
 			if((*ippool).Name == "mgmt-nic-ip-pool"){        
-				primaryNetworkInterface, err := GetPrimaryNetworkInterface(machineScope.AzureMachine.Spec.NetworkInterfaces)
+				primaryNetworkInterface, err := GetPrimaryNetworkInterface(machineScope.AzureMachine.Status.NetworkInterfaces)
 				if err!= nil {
 					return errors.Wrapf(err, "Error getting primary nic for the machine %s",machineScope.Name())
 				}
@@ -223,7 +226,10 @@ func (s *AzureIPPoolScope) FreeIPs(ctx context.Context, machineScope *MachineSco
 			}
 		}
 		machineScope.Info(fmt.Sprintf("Assigning network interfaces to nil"))
-		machineScope.AzureMachine.Spec.NetworkInterfaces = []infrav1.NetworkInterface{}
+		machineScope.AzureMachine.Status.NetworkInterfaces = []infrav1.NetworkInterface{}
+		if err := s.Client.Status().Update(ctx, machineScope.AzureMachine); err != nil {
+			return errors.Wrapf(err, "Failed to update Azure Machine")
+		}
 	}
 
 	return nil
