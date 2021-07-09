@@ -27,6 +27,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"fmt"
 	"sync"
+	"time"
 	azure "github.com/niachary/cluster-api-provider-azure/cloud"
 )
 
@@ -163,6 +164,8 @@ func (s *AzureIPPoolScope) ReconcileIPs(ctx context.Context, machineScope *Machi
 			networkInterface.StaticIPAddress = allocatedIP
         }
         machineScope.AzureMachine.Status.NetworkInterfaces = append(machineScope.AzureMachine.Status.NetworkInterfaces, networkInterface)
+		//sleep before updating the status - or retry till its successful?
+		time.Sleep(20 * time.Second)
 		if err := s.Client.Status().Update(ctx, machineScope.AzureMachine); err != nil {
 			return errors.Wrapf(err, "Failed to update Azure Machine")
 		}
@@ -227,6 +230,7 @@ func (s *AzureIPPoolScope) FreeIPs(ctx context.Context, machineScope *MachineSco
 		}
 		machineScope.Info(fmt.Sprintf("Assigning network interfaces to nil"))
 		machineScope.AzureMachine.Status.NetworkInterfaces = []infrav1.NetworkInterface{}
+
 		if err := s.Client.Status().Update(ctx, machineScope.AzureMachine); err != nil {
 			return errors.Wrapf(err, "Failed to update Azure Machine")
 		}
