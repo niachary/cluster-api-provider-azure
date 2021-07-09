@@ -163,8 +163,11 @@ func (s *AzureIPPoolScope) ReconcileIPs(ctx context.Context, machineScope *Machi
 			machineScope.Info(fmt.Sprintf("Successfully updated AzureIPPool %s", azureippools.Name))
 			networkInterface.StaticIPAddress = allocatedIP
         }
+		machineScope.Info(fmt.Sprintf("Updating NetworkInterfaces for nic %s",networkInterface.Name))
         machineScope.AzureMachine.Status.NetworkInterfaces = append(machineScope.AzureMachine.Status.NetworkInterfaces, networkInterface)
 	}
+	machineScope.Info(fmt.Sprintf("Setting ReconciledIP to true"))
+	machineScope.AzureMachine.Status.ReconciledIP = true
 	//sleep before updating the status - or retry till its successful?
 	time.Sleep(20 * time.Second)
 	if err := s.Client.Status().Update(ctx, machineScope.AzureMachine); err != nil {
@@ -221,19 +224,26 @@ func (s *AzureIPPoolScope) FreeIPs(ctx context.Context, machineScope *MachineSco
 					(*ippool).FreeIPs = append((*ippool).FreeIPs, freeIP)
 				}
 				machineScope.Info(fmt.Sprintf("Free IPPool after is %v", (*ippool).FreeIPs))
-
-				if err := s.Client.Update(ctx, azureippools); err != nil {
-					return errors.Wrapf(err, "Failed to update Azure IP pool")
-				}
-				machineScope.Info(fmt.Sprintf("Successfully updated AzureIPPool %s", azureippools.Name))
 			}
 		}
+		//sleep before updating the ippool - or retry till its successful?
+		time.Sleep(20 * time.Second)
+		if err := s.Client.Update(ctx, azureippools); err != nil {
+			return errors.Wrapf(err, "Failed to update Azure IP pool")
+		}
+		machineScope.Info(fmt.Sprintf("Successfully updated AzureIPPool %s", azureippools.Name))
+
 		machineScope.Info(fmt.Sprintf("Assigning network interfaces to nil"))
 		machineScope.AzureMachine.Status.NetworkInterfaces = []infrav1.NetworkInterface{}
+		machineScope.Info(fmt.Sprintf("Setting ReconciledIP to false"))
+		machineScope.AzureMachine.Status.ReconciledIP = false
 
+		//sleep before updating the status - or retry till its successful?
+		time.Sleep(20 * time.Second)
 		if err := s.Client.Status().Update(ctx, machineScope.AzureMachine); err != nil {
 			return errors.Wrapf(err, "Failed to update Azure Machine")
 		}
+		machineScope.Info(fmt.Sprintf("Successfully updated AzureMachine %s", machineScope.AzureMachine.Name))
 	}
 
 	return nil
