@@ -156,16 +156,18 @@ func (s *AzureIPPoolScope) ReconcileIPs(ctx context.Context, machineScope *Machi
 				(*ippool).AllocatedIPs = append((*ippool).AllocatedIPs, allocatedIP)
 			}
 			machineScope.Info(fmt.Sprintf("Allocated IPPool after %v", (*ippool).AllocatedIPs))
-
-			if err := s.Client.Update(ctx, azureippools); err != nil {
-				return errors.Wrapf(err, "Failed to update Azure IP pool")
-			}
-			machineScope.Info(fmt.Sprintf("Successfully updated AzureIPPool %s", azureippools.Name))
 			networkInterface.StaticIPAddress = allocatedIP
         }
-		machineScope.Info(fmt.Sprintf("Updating NetworkInterfaces for nic %s",networkInterface.Name))
         machineScope.AzureMachine.Status.NetworkInterfaces = append(machineScope.AzureMachine.Status.NetworkInterfaces, networkInterface)
 	}
+
+	//sleep before updating the status - or retry till its successful?
+	time.Sleep(20 * time.Second)
+	if err := s.Client.Update(ctx, azureippools); err != nil {
+		return errors.Wrapf(err, "Failed to update Azure IP pool")
+	}
+	machineScope.Info(fmt.Sprintf("Successfully updated AzureIPPool %s", azureippools.Name))
+	
 	machineScope.Info(fmt.Sprintf("Setting ReconciledIP to true"))
 	machineScope.AzureMachine.Status.ReconciledIP = true
 	//sleep before updating the status - or retry till its successful?
@@ -189,7 +191,7 @@ func (s *AzureIPPoolScope) FreeIPs(ctx context.Context, machineScope *MachineSco
         return errors.Wrapf(err, "Failed to retrieve Azure IP pool")
     }
 
-	if len(machineScope.AzureMachine.Status.NetworkInterfaces) > 0 {
+	if machineScope.AzureMachine.Status.ReconciledIP == true {
 		for index, _ := range(azureippools.Spec.IPPools) {
 			ippool := &azureippools.Spec.IPPools[index]
 			if((*ippool).Name == "mgmt-nic-ip-pool"){        

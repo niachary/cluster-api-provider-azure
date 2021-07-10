@@ -283,13 +283,12 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
     }
 
     log := klogr.New()
-    //check if this info can be stored in spec?
     log.Info(fmt.Sprintf("length of network interface is %d",len(machineScope.AzureMachine.Status.NetworkInterfaces)))
     machineScope.Info(fmt.Sprintf("ReconciledIP value is %t", machineScope.AzureMachine.Status.ReconciledIP))
     if machineScope.AzureMachine.Status.ReconciledIP == false {
         if err:= r.reconcileAzureMachineIPAddress(machineScope, ctx, clusterScope, azureIPPoolScope); err!= nil {
-            r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error reconciling IPPool", errors.Wrapf(err, "error reconciling IPPool for machine %s", machineScope.Name()).Error())
-            return reconcile.Result{}, errors.Wrapf(err, "failed to retrieve Azure IP pool")
+            r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error in reconcileAzureMachineIPAddress", errors.Wrapf(err, "error reconciling IPPool for machine %s", machineScope.Name()).Error())
+            return reconcile.Result{}, errors.Wrapf(err, "Error in reconcileAzureMachineIPAddress")
         }
     }
     
