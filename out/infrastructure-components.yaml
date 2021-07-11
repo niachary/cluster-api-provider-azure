@@ -1112,38 +1112,6 @@ spec:
               location:
                 description: 'DEPRECATED: to support old clients, will be removed in v1alpha4'
                 type: string
-              networkInterfaces:
-                items:
-                  description: NetworkInterfaces allows user to add multiple nics to the VMs
-                  properties:
-                    acceleratedNetworking:
-                      description: Accelerated Networking
-                      type: boolean
-                    isPrimary:
-                      description: Flag for Primary NIC
-                      type: boolean
-                    name:
-                      description: Name of the network interface
-                      type: string
-                    staticIPAddress:
-                      description: static IP address
-                      type: string
-                    subnetName:
-                      description: Name of the subnet
-                      type: string
-                    vnetName:
-                      description: Name of the vnet
-                      type: string
-                    vnetResourceGroup:
-                      description: Resource Group for the Vnet
-                      type: string
-                  required:
-                  - name
-                  - subnetName
-                  - vnetName
-                  - vnetResourceGroup
-                  type: object
-                type: array
               osDisk:
                 description: OSDisk specifies the parameters for the operating system disk of the machine
                 properties:
@@ -1267,8 +1235,44 @@ spec:
               failureReason:
                 description: "ErrorReason will be set in the event that there is a terminal problem reconciling the Machine and will contain a succinct value suitable for machine interpretation. \n This field should not be set for transitive errors that a controller faces that are expected to be fixed automatically over time (like service outages), but instead indicate that something is fundamentally wrong with the Machine's spec or the configuration of the controller, and that manual intervention is required. Examples of terminal errors would be invalid combinations of settings in the spec, values that are unsupported by the controller, or the responsible controller itself being critically misconfigured. \n Any transient errors that occur during the reconciliation of Machines can be added as events to the Machine object and/or logged in the controller's output."
                 type: string
+              networkInterfaces:
+                description: NetworkInterface struct stores the network interface details
+                items:
+                  description: NetworkInterfaces allows user to add multiple nics to the VMs
+                  properties:
+                    acceleratedNetworking:
+                      description: Accelerated Networking
+                      type: boolean
+                    isPrimary:
+                      description: Flag for Primary NIC
+                      type: boolean
+                    name:
+                      description: Name of the network interface
+                      type: string
+                    staticIPAddress:
+                      description: static IP address
+                      type: string
+                    subnetName:
+                      description: Name of the subnet
+                      type: string
+                    vnetName:
+                      description: Name of the vnet
+                      type: string
+                    vnetResourceGroup:
+                      description: Resource Group for the Vnet
+                      type: string
+                  required:
+                  - name
+                  - subnetName
+                  - vnetName
+                  - vnetResourceGroup
+                  type: object
+                type: array
               ready:
                 description: Ready is true when the provider resource is ready.
+                type: boolean
+              reconciledIP:
+                description: Reconciled IP updates if an IP has been assigned from the pool
                 type: boolean
               vmState:
                 description: VMState is the provisioning state of the Azure virtual machine.
@@ -1563,38 +1567,6 @@ spec:
                       location:
                         description: 'DEPRECATED: to support old clients, will be removed in v1alpha4'
                         type: string
-                      networkInterfaces:
-                        items:
-                          description: NetworkInterfaces allows user to add multiple nics to the VMs
-                          properties:
-                            acceleratedNetworking:
-                              description: Accelerated Networking
-                              type: boolean
-                            isPrimary:
-                              description: Flag for Primary NIC
-                              type: boolean
-                            name:
-                              description: Name of the network interface
-                              type: string
-                            staticIPAddress:
-                              description: static IP address
-                              type: string
-                            subnetName:
-                              description: Name of the subnet
-                              type: string
-                            vnetName:
-                              description: Name of the vnet
-                              type: string
-                            vnetResourceGroup:
-                              description: Resource Group for the Vnet
-                              type: string
-                          required:
-                          - name
-                          - subnetName
-                          - vnetName
-                          - vnetResourceGroup
-                          type: object
-                        type: array
                       osDisk:
                         description: OSDisk specifies the parameters for the operating system disk of the machine
                         properties:
@@ -2462,12 +2434,6 @@ spec:
             secretKeyRef:
               key: arm-endpoint
               name: capz-manager-bootstrap-credentials
-        - name: AZURE_SDK_TRACING_ENABLED
-          value: "True"
-        - name: AZURE_GO_SDK_LOG_LEVEL
-          value: debug
-        - name: AZURE_GO_SDK_LOG_FILE
-          value: /etc/log.txt
         image: niachary/cluster-api-azure-controller-amd64:dev
         imagePullPolicy: Always
         livenessProbe:
