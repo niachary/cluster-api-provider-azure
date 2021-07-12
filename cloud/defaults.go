@@ -89,6 +89,10 @@ func GenerateNICName(machineName string) string {
 	return fmt.Sprintf("%s-%s-nic", machineName, rand.String(5))
 }
 
+func GenerateManagementControlPlaneNICName(machineName string) string {
+	return fmt.Sprintf("%s-nic", machineName)
+}
+
 // GeneratePublicNICName generates the name of a public network interface based on the name of a VM.
 func GeneratePublicNICName(machineName string) string {
 	return fmt.Sprintf("%s-public-nic", machineName)

@@ -51,6 +51,9 @@ type AzureMachineSpec struct {
 	// +optional
 	Image *Image `json:"image,omitempty"`
 
+	// Is Management Cluster Control Plane
+	IsManagementClusterControlPlane bool `json:"isManagementClusterControlPlane"`
+
 	// Identity is the type of identity used for the virtual machine.
 	// The type 'SystemAssigned' is an implicitly created identity.
 	// The generated identity will be assigned a Subscription contributor role.

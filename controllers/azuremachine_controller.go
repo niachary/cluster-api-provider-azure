@@ -38,6 +38,7 @@ import (
     "sigs.k8s.io/controller-runtime/pkg/handler"
     "sigs.k8s.io/controller-runtime/pkg/reconcile"
     "sigs.k8s.io/controller-runtime/pkg/source"
+    azure "github.com/niachary/cluster-api-provider-azure/cloud"
 
     infrav1 "github.com/niachary/cluster-api-provider-azure/api/v1alpha3"
     "github.com/niachary/cluster-api-provider-azure/cloud/scope"
@@ -281,6 +282,24 @@ func (r *AzureMachineReconciler) reconcileNormal(ctx context.Context, machineSco
             machineScope.AzureMachine.Spec.FailureDomain = machineScope.AzureMachine.Spec.AvailabilityZone.ID
         }
     }
+
+    //set the status of the management cluster control plane machine
+    if machineScope.AzureMachine.Spec.IsManagementClusterControlPlane {
+        machineScope.AzureMachine.Status.ReconciledIP = true
+        networkInterface := infrav1.NetworkInterface{}
+        networkInterface.Name = azure.GenerateManagementControlPlaneNICName(machineScope.AzureMachine.Name)
+        networkInterface.VnetName = clusterScope.Vnet().Name
+        networkInterface.SubnetName = clusterScope.ControlPlaneSubnet().Name
+        networkInterface.VnetResourceGroup = clusterScope.Vnet().ResourceGroup
+        machineScope.AzureMachine.Status.NetworkInterfaces = append(machineScope.AzureMachine.Status.NetworkInterfaces, networkInterface)
+    }
+
+    //update the status on the machine
+    if err := r.Client.Status().Update(ctx, machineScope.AzureMachine); err != nil {
+        r.Recorder.Eventf(machineScope.AzureMachine, corev1.EventTypeWarning, "Error in updating AzureMachine status", "Error in updating AzureMachine status")
+        return reconcile.Result{}, err
+    }
+    machineScope.Info(fmt.Sprintf("Successfully updated AzureMachine %s status", machineScope.AzureMachine.Name))
 
     log := klogr.New()
     log.Info(fmt.Sprintf("length of network interface is %d",len(machineScope.AzureMachine.Status.NetworkInterfaces)))
