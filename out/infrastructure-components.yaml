@@ -1109,6 +1109,9 @@ spec:
                 type: object
               imageID:
                 type: string
+              isManagementClusterControlPlane:
+                description: Is Management Cluster Control Plane
+                type: boolean
               location:
                 description: 'DEPRECATED: to support old clients, will be removed in v1alpha4'
                 type: string
@@ -1176,6 +1179,7 @@ spec:
                 type: string
             required:
             - imageID
+            - isManagementClusterControlPlane
             - location
             - osDisk
             - sshPublicKey
@@ -1564,6 +1568,9 @@ spec:
                         type: object
                       imageID:
                         type: string
+                      isManagementClusterControlPlane:
+                        description: Is Management Cluster Control Plane
+                        type: boolean
                       location:
                         description: 'DEPRECATED: to support old clients, will be removed in v1alpha4'
                         type: string
@@ -1631,6 +1638,7 @@ spec:
                         type: string
                     required:
                     - imageID
+                    - isManagementClusterControlPlane
                     - location
                     - osDisk
                     - sshPublicKey
